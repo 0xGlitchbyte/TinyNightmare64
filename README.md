@@ -8,4 +8,4 @@ you need to have installed modern-n64sdk
 
 https://github.com/trhodeos/modern-n64sdk
 
-possible thanks to Mielke, Wiseguy, gamemasterplc and CrashOveride
+possible thanks to Mielke, Wiseguy, gamemasterplc, Buu342 and CrashOveride
