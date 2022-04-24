@@ -1,3 +1,11 @@
-# n64.modern.render.test
+# n64 modern 3D render test
 
-a fork of N64_3DRenderingTest intended to compile with CrashOverride's modern-n64sdk libraries
+these are the source files to build a Nintendo 64 rom that displays 3D models
+
+i've only tested on Ubuntu 
+
+you need to have installed modern-n64sdk
+
+https://github.com/trhodeos/modern-n64sdk
+
+Possible thanks to Mielke, Wiseguy, gamemasterplc and CrashOveride
