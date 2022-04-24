@@ -10,7 +10,6 @@ void updateGame00(void);
 
 
 /* The global variable  */
-NUContData contdata[1]; /* Read data of 1 controller  */
 u8 contPattern;        /* The pattern connected to the controller  */
 
 /*------------------------
