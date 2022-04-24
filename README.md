@@ -13,3 +13,4 @@ you need to have modern-n64sdk installed
 https://github.com/trhodeos/modern-n64sdk
 
 possible thanks to Mielke, Wiseguy, gamemasterplc, Buu342 and CrashOveride
+ 
