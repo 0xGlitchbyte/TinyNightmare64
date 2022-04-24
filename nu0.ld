@@ -88,6 +88,7 @@ SECTIONS
 
       */libultra_rom.a:*.o(.*rodata*);
       */libnusys.a:*.o(.*rodata*);
+      */libnustd.a:*.o(.*rodata*);
       */libgcc.a:*.o(.*rodata*);
    }
    END_SEG(code)
