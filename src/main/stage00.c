@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "graphic.h"
-#include "testcube.h"
+#include "Celebi.h"
 #include "math.h"
 
 void draw_cube(Dynamic *dynamicp, float t);
@@ -14,7 +14,7 @@ void debug_console_int(char *name, int variable, int pos);
 void debug_console_float(char *name, float variable, int pos);
 
 void set_angle(float xangle_diff, float yangle_diff);
-void move_to(float view_speed, float forward_speed);
+void move_to(float view_speed, float forward_speed, float up_speed);
 
 int lim(u32 input);
 int t = 1;
@@ -46,6 +46,7 @@ typedef struct
   float yview;
   float forward;
   float side;
+  float up;
 } Movement;
 Movement move;
 
@@ -56,7 +57,7 @@ void set_angle(float xangle_diff, float yangle_diff)
   get_forward(cam.xangle, cam.yangle, &cam.forward.x, &cam.forward.y, &cam.forward.z);
 }
 
-void move_to(float side_speed, float forward_speed)
+void move_to(float side_speed, float forward_speed, float up_speed)
 {
   cam.pos.x += cam.forward.x * forward_speed;
   cam.pos.z += cam.forward.z * forward_speed;
@@ -67,6 +68,11 @@ void move_to(float side_speed, float forward_speed)
     get_forward(cam.xangle, cam.yangle + RAD_90, &x, &y, &z);
     cam.pos.x += x * side_speed;
     cam.pos.z += z * side_speed;
+  }
+
+  if (up_speed != 0)
+  {
+    cam.pos.y += up_speed; 
   }
 }
 
@@ -190,7 +196,7 @@ void draw_cube(Dynamic *dynamicp, float t)
   /* DRAW OBJECT
   ====================================================
   ====================================================*/
-  gSPDisplayList(glistp++, Wtx_testingCube);
+  gSPDisplayList(glistp++, Wtx_Celebi);
   /*=================================================
   ====================================================*/
 
@@ -203,14 +209,23 @@ void updateGame00()
 {
   /* Data reading of controller 1 */
   nuContDataGetEx(contdata, 0);
+  move.xview = contdata->stick_y;
   move.yview = contdata->stick_x;
-  move.xview = -contdata->stick_y;
   move.xview *= fabs(move.xview);
   move.yview *= fabs(move.yview);
   move.forward = (lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS));
   move.side = (lim(contdata[0].button & R_CBUTTONS) - lim(contdata[0].button & L_CBUTTONS));
-  set_angle(move.xview / 100000.0, move.yview / 100000.0);
-  move_to(move.side * 5.0, move.forward * 5.0);
+  move.up = (lim(contdata[0].button & A_BUTTON) - lim(contdata[0].button & B_BUTTON));
+
+  /*if(contdata[0].button & START_BUTTON){}*/
+  if(contdata[0].button & A_BUTTON){
+    cubescale += 0.001;
+  }
+  if(contdata[0].button & B_BUTTON){
+    cubescale -= 0.001;
+  }
+  set_angle(-move.xview / 100000.0, move.yview / 100000.0);
+  move_to(move.side * 5.0, move.forward * 5.0, move.up * 5.0);
 }
 
 void debug_console_int(char *name, int variable, int pos)
