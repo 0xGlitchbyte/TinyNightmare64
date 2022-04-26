@@ -94,26 +94,24 @@ void SetViewMtx(Dynamic *dp)
 
   /* The calculation and set-up of the projection-matrix  */
   guPerspective(
-      &dp->projection,                     // Mtx *m
-      &perspNorm,                          // u16 *perspNorm,
-      50,                                  // FOV
-      (float)SCREEN_WD / (float)SCREEN_HT, // ASPECT
-      10,                                  // near plane clicaming
-      10000,                               // far plane clicaming
-      1.0F                                 // matrix object scaling
+    &dp->projection,                     // Mtx *m
+    &perspNorm,                          // u16 *perspNorm,
+    50,                                  // FOV
+    (float)SCREEN_WD / (float)SCREEN_HT, // ASPECT
+    10,                                  // near plane clicaming
+    10000,                               // far plane clicaming
+    1.0F                                 // matrix object scaling
   );
 
   guLookAt(&dp->viewing,
-
-           cam.pos.x,
-           cam.pos.y,
-           cam.pos.z,
-
-           cam.pos.x + cam.forward.x,
-           cam.pos.y + cam.forward.y,
-           cam.pos.z + cam.forward.z,
-
-           0, 1, 0);
+    cam.pos.x,
+    cam.pos.y,
+    cam.pos.z,
+    cam.pos.x + cam.forward.x,
+    cam.pos.y + cam.forward.y,
+    cam.pos.z + cam.forward.z,
+    0, 1, 0
+  );
 
   gSPPerspNormalize(glistp++, perspNorm);
   gSPLookAt(glistp++, &dp->viewing);
