@@ -42,8 +42,8 @@ Position cam;
 
 typedef struct
 {
-  float yview;
   float xview;
+  float yview;
   float forward;
   float side;
 } Movement;
