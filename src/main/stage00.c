@@ -151,7 +151,7 @@ void makeDL00(void)
   assert(glistp - gfx_glist < GFX_GLIST_LEN);
 
   /* Activate the RSP task.  Switch display buffers at the end of the task. */
-  nuGfxTaskStart(&gfx_glist[0], (s32)(glistp - gfx_glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_SWAPBUFFER);
+  nuGfxTaskStart(&gfx_glist[0], (s32)(glistp - gfx_glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_NOSWAPBUFFER);
 
   /* DEBUG CONSOLE!!!!!!!!!!!! Display characters on the frame buffer, debug console only */
   nuDebConDisp(NU_SC_SWAPBUFFER);
@@ -163,7 +163,8 @@ void makeDL00(void)
   //debug_console_float("xangle", cam.xangle, 6);
   //debug_console_float("yangle", cam.yangle, 7);
   // debug_console_float("posy",cam.pos.y,6);
-
+  
+  nuDebConDisp(NU_SC_SWAPBUFFER);
   gDPFullSync(glistp++);
   gSPEndDisplayList(glistp++);
 }
