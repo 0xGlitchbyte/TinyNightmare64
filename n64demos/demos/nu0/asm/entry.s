@@ -1,4 +1,4 @@
-#include <simple.h>
+#include <nusys.h>
 # assembler directives
 .set noat      # allow manual use of $at
 .set noreorder # don't insert nops after branches
@@ -17,7 +17,7 @@ bss_clear:
     sw $zero, 4($t0)
     bnez $t1, bss_clear
 	addi $t0, $t0, 8
-    la $t2, boot #Boot function address
-	la $sp, bootStack+STACKSIZEBYTES #Setup boot stack pointer, change stack size if needed here
+    la $t2, nuBoot #Boot function address
+	la $sp, NU_SPEC_BOOT_STACK #Setup boot stack pointer, change stack size if needed here
     jr $t2
     nop

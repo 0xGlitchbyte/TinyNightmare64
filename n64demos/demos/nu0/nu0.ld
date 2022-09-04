@@ -1,4 +1,20 @@
+/*
+	ROM spec file
+
+	Main memory map
+
+  	0x80000000  exception vectors, ...
+  	0x80000400  zbuffer (size 320*240*2)
+  	0x80025c00  codesegment
+	      :  
+  	0x8038F800  cfb 16b 3buffer (size 320*240*2*3)
+
+	Copyright (C) 1997-1999, NINTENDO Co,Ltd.
+*/
+
 OUTPUT_ARCH (mips)
+
+#include <nusys.h>
 
 /* Starts a segment */
 #define BEGIN_SEG(name, addr) \
@@ -33,85 +49,64 @@ SECTIONS
    }
    END_SEG(boot)
 
-   BEGIN_SEG(code, 0x80000400) SUBALIGN(16)
+   BEGIN_SEG(code, NU_SPEC_BOOT_ADDR) SUBALIGN(16)
    {
+      /* text */
 		BUILD_DIR/asm/entry.o(.start);
+      /usr/lib/n64/nusys/nusys_rom.o(.text);
       BUILD_DIR/src/main*.o(.text);
 
       */libultra_rom.a:*.o(.text);
+      */libnusys.a:*.o(.text);
       */libgcc.a:*.o(.text);
+      */libnustd.a:*.o(.text);
       /usr/lib/n64/PR/rspboot.o(.text);
-      /usr/lib/n64/PR/gspFast3D.o(.text);
-      /usr/lib/n64/PR/gspFast3D.dram.o(.text);
-      /usr/lib/n64/PR/aspMain.o(.text);
+      /usr/lib/n64/PR/gspF3DEX2.fifo.o(.text);
+      /usr/lib/n64/PR/gspL3DEX2.fifo.o(.text);
+      /usr/lib/n64/PR/gspF3DEX2.Rej.fifo.o(.text);
+      /usr/lib/n64/PR/gspF3DEX2.NoN.fifo.o(.text);
+      /usr/lib/n64/PR/gspF3DLX2.Rej.fifo.o(.text);
+      /usr/lib/n64/PR/gspS2DEX2.fifo.o(.text);
 
       /* data */
+      /usr/lib/n64/nusys/nusys_rom.o(.data*);
       BUILD_DIR/src/main*.o(.data*);
 
       */libultra_rom.a:*.o(.data*);
+      */libnusys.a:*.o(.data*);
       /usr/lib/n64/PR/rspboot.o(.data*);
-      /usr/lib/n64/PR/gspFast3D.o(.data*);
-      /usr/lib/n64/PR/gspFast3D.dram.o(.data*);
-      /usr/lib/n64/PR/aspMain.o(.data*);
+      /usr/lib/n64/PR/gspF3DEX2.fifo.o(.data*);
+      /usr/lib/n64/PR/gspL3DEX2.fifo.o(.data*);
+      /usr/lib/n64/PR/gspF3DEX2.Rej.fifo.o(.data*);
+      /usr/lib/n64/PR/gspF3DEX2.NoN.fifo.o(.data*);
+      /usr/lib/n64/PR/gspF3DLX2.Rej.fifo.o(.data*);
+      /usr/lib/n64/PR/gspS2DEX2.fifo.o(.data*);
 
       /* rodata */
+      /usr/lib/n64/nusys/nusys_rom.o(.*rodata*);
       BUILD_DIR/src/main*.o(.*rodata*);
 
       */libultra_rom.a:*.o(.*rodata*);
+      */libnusys.a:*.o(.*rodata*);
+      */libnustd.a:*.o(.*rodata*);
       */libgcc.a:*.o(.*rodata*);
    }
    END_SEG(code)
    BEGIN_NOLOAD(code)
    {
+      /usr/lib/n64/nusys/nusys_rom.o(COMMON);
+      /usr/lib/n64/nusys/nusys_rom.o(.scommon);
+      /usr/lib/n64/nusys/nusys_rom.o(.*bss*);
       BUILD_DIR/src/main*.o(.*bss*);
 
       */libultra_rom.a:*.o(COMMON);
       */libultra_rom.a:*.o(.scommon);
       */libultra_rom.a:*.o(.*bss*);
+      */libnusys.a:*.o(COMMON);
+      */libnusys.a:*.o(.scommon);
+      */libnusys.a:*.o(.*bss*);
    }
    END_NOLOAD(code)
-   
-   BEGIN_NOLOAD(gfxdlists)
-   {
-      BUILD_DIR/src/buffers/gfxdlists.o(.bss*);
-   }
-   END_NOLOAD(gfxdlists)
-   
-   BEGIN_SEG(static, 0x01000000)
-   {
-      BUILD_DIR/assets/gfxinit.o(.data);
-      BUILD_DIR/assets/gfxstatic.o(.data);
-   }
-   END_SEG(static)
-   
-   BEGIN_SEG(dynamic, 0x02000000)
-   {
-      BUILD_DIR/src/buffers/gfxdynamic.o(.data);
-   }
-   END_SEG(dynamic)
-   
-   . = 0x801da800;
-   
-   BEGIN_NOLOAD(zbuffer)
-   {
-      BUILD_DIR/src/buffers/gfxzbuffer.o(.bss*);
-   }
-   END_NOLOAD(zbuffer)
-
-   . = 0x80200000;
-   
-   BEGIN_NOLOAD(cfb)
-   {
-      BUILD_DIR/src/buffers/gfxcfb.o(.bss*);
-   }
-   END_NOLOAD(cfb)
-
-   BEGIN_SEG(sound_data, __romPos)
-   {
-      BUILD_DIR/assets/sound_data.o(.data);
-   }
-   END_SEG(sound_data)
-
    /* Discard everything not specifically mentioned above. */
    /DISCARD/ :
    {
