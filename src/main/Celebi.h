@@ -366,5 +366,6 @@ Gfx Wtx_Celebi[] = {
 		32,32, 0, G_TX_WRAP|G_TX_NOMIRROR, G_TX_WRAP|G_TX_NOMIRROR,
 		5,5, G_TX_NOLOD, G_TX_NOLOD),
 	gsSPDisplayList(Vtx_Celebi_mesh01_dl),
+    gsSPPopMatrix(G_MTX_MODELVIEW),
 	gsSPEndDisplayList()
 };
