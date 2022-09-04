@@ -143,12 +143,7 @@ void makeDL00(void)
 
   /* Draw a square  */
   draw_cube(&gfx_dynamic, t, Wtx_Celebi, 1);
-
-  /* End the construction of the display list  */
-  gDPFullSync(glistp++);
-  gSPEndDisplayList(glistp++);
-
-  draw_cube(&gfx_dynamic, t, Wtx_MyModel, 10);
+  draw_cube(&gfx_dynamic, t, Wtx_Cube, 10);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
