@@ -126,5 +126,6 @@ Gfx Wtx_Cube[] = {
 	//	32,32, 0, G_TX_WRAP|G_TX_NOMIRROR, G_TX_WRAP|G_TX_NOMIRROR,
     //	5,5, G_TX_NOLOD, G_TX_NOLOD),
 	gsSPDisplayList(gfx_MyModel),
-	gsSPEndDisplayList()
+    gsSPPopMatrix(G_MTX_MODELVIEW),
+	gsSPEndDisplayList(),
 };
