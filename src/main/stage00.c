@@ -142,8 +142,8 @@ void makeDL00(void)
   // guRotate(&gfx_dynamic.modeling, 0.0F, 0.0F, 0.0F, 0.0F);
 
   /* Draw a square  */
-  draw_celebi(&gfx_dynamic, t, Wtx_Celebi, 1);
-  draw_cube(&gfx_dynamic, t, Wtx_Cube, 1);
+  draw_cube(&gfx_dynamic, t, Wtx_Celebi, 1);
+  draw_cube(&gfx_dynamic, t, Wtx_Cube, 10);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
@@ -170,53 +170,6 @@ void makeDL00(void)
   gDPFullSync(glistp++);
   gSPEndDisplayList(glistp++);
 }
-
-
-
-
-
-
-void draw_celebi(Dynamic *dynamicp, float t, Gfx *model, int scale)
-{
-  int i = 0;
-
-  /* Create matrices for mult */
-  /* CUBE IS AT CENTER OF EARTH */
-  guTranslate(&dynamicp->pos, 100, 0, 100);
-  guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
-  guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
-  guScale(&dynamicp->scale, cubescale * scale, cubescale * scale, cubescale * scale);
-
-  /* apply transformation matrices, to stack */
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->pos)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->scale)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-
-  /* Rendering setup */
-  gDPSetRenderMode(glistp++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
-  gSPTexture(glistp++, 0x8000, 0x8000, 0, 0, G_ON);
-  gDPSetCycleType(glistp++, G_CYC_1CYCLE);
-  gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-  gSPClearGeometryMode(glistp++, 0xFFFFFFFF);
-  gSPSetGeometryMode(glistp++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
-
-  /* DRAW OBJECT
-  ====================================================
-  ====================================================*/
-  gSPDisplayList(glistp++, model);
-  /*=================================================
-  ====================================================*/
-
-  /* Finalise and exit drawing */
-  gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
-  gDPPipeSync(glistp++);
-}
-
-
-
-
-
 
 void draw_cube(Dynamic *dynamicp, float t, Gfx *model, int scale)
 {
@@ -254,11 +207,6 @@ void draw_cube(Dynamic *dynamicp, float t, Gfx *model, int scale)
   gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
   gDPPipeSync(glistp++);
 }
-
-
-
-
-
 
 void updateGame00()
 {
