@@ -121,10 +121,11 @@ static Gfx gfx_MyModel[] = {
     gsSPEndDisplayList(),
 };
 
-Gfx Wtx_MyModel[] = {
-	gsDPLoadTextureBlock(Text_MyModel_Pii_SEREBHI_body_diff, G_IM_FMT_RGBA, G_IM_SIZ_16b,
-		32,32, 0, G_TX_WRAP|G_TX_NOMIRROR, G_TX_WRAP|G_TX_NOMIRROR,
-		5,5, G_TX_NOLOD, G_TX_NOLOD),
-	gsSPDisplayList(Vtx_Celebi_mesh01_dl),
-	gsSPEndDisplayList()
+Gfx Wtx_Cube[] = {
+	//gsDPLoadTextureBlock(Text_MyModel_Pii_SEREBHI_body_diff, G_IM_FMT_RGBA, G_IM_SIZ_16b,
+	//	32,32, 0, G_TX_WRAP|G_TX_NOMIRROR, G_TX_WRAP|G_TX_NOMIRROR,
+    //	5,5, G_TX_NOLOD, G_TX_NOLOD),
+	gsSPDisplayList(gfx_MyModel),
+    gsSPPopMatrix(G_MTX_MODELVIEW),
+	gsSPEndDisplayList(),
 };
