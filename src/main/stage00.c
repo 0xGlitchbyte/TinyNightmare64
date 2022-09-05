@@ -5,12 +5,11 @@
 #include <string.h>
 
 #include "graphic.h"
-#include "Celebi.h"
-#include "MyModel.h"
+#include "texcube.h"
 #include "math.h"
 
-void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale);
 void SetViewMtx(Dynamic *);
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
 void debug_console_int(char *name, int variable, int pos);
 void debug_console_float(char *name, float variable, int pos);
 
@@ -126,6 +125,44 @@ void SetViewMtx(Dynamic *dp)
   gSPMatrix(glistp++, &(dp->viewing), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 }
 
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale)
+{
+  int i = 0;
+
+  /* Create matrices for mult */
+  /* CUBE IS AT CENTER OF EARTH */
+  guTranslate(&dynamicp->pos, 0, 0, 0);
+  guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
+  guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
+  guScale(&dynamicp->scale, cubescale * scale, cubescale * scale, cubescale * scale);
+
+  /* apply transformation matrices, to stack */
+  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->pos)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->scale)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
+  /* Rendering setup */
+  gDPSetRenderMode(glistp++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
+  //gSPTexture(glistp++, 0x8000, 0x8000, 0, 0, G_ON);
+  gSPTexture(glistp++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+  gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+  gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+  gSPClearGeometryMode(glistp++, 0xFFFFFFFF);
+  gSPSetGeometryMode(glistp++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
+
+  /* DRAW OBJECT
+  ====================================================
+  ====================================================*/
+  gSPDisplayList(glistp++, model);
+  /*=================================================
+  ====================================================*/
+
+  /* Finalise and exit drawing */
+  gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
+  gDPPipeSync(glistp++);
+}
+
 void makeDL00(void)
 {
   /* Specify the display list buffer  */
@@ -141,9 +178,9 @@ void makeDL00(void)
 
   // guRotate(&gfx_dynamic.modeling, 0.0F, 0.0F, 0.0F, 0.0F);
 
-  /* Draw a square  */
-  draw_cube(&gfx_dynamic, t, Wtx_Celebi, 1);
-  draw_cube(&gfx_dynamic, t, Wtx_Cube, 10);
+  /* Draw models  */
+    
+  draw_mesh(&gfx_dynamic, gfx_cube, 1);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
@@ -169,43 +206,6 @@ void makeDL00(void)
   nuDebConDisp(NU_SC_SWAPBUFFER);
   gDPFullSync(glistp++);
   gSPEndDisplayList(glistp++);
-}
-
-void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale)
-{
-  int i = 0;
-
-  /* Create matrices for mult */
-  /* CUBE IS AT CENTER OF EARTH */
-  guTranslate(&dynamicp->pos, 0, 0, 0);
-  guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
-  guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
-  guScale(&dynamicp->scale, cubescale * scale, cubescale * scale, cubescale * scale);
-
-  /* apply transformation matrices, to stack */
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->pos)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->scale)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-  gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(dynamicp->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-
-  /* Rendering setup */
-  gDPSetRenderMode(glistp++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
-  gSPTexture(glistp++, 0x8000, 0x8000, 0, 0, G_ON);
-  gDPSetCycleType(glistp++, G_CYC_1CYCLE);
-  gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-  gSPClearGeometryMode(glistp++, 0xFFFFFFFF);
-  gSPSetGeometryMode(glistp++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
-
-  /* DRAW OBJECT
-  ====================================================
-  ====================================================*/
-  gSPDisplayList(glistp++, model);
-  /*=================================================
-  ====================================================*/
-
-  /* Finalise and exit drawing */
-  gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
-  gDPPipeSync(glistp++);
 }
 
 void updateGame00()
