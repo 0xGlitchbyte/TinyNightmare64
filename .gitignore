@@ -52,7 +52,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+<<<<<<< HEAD
 
 .DS_Store
 n64_modern_3d_render_test
 portable*
+=======
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+>>>>>>> 173e74afbd44b6b7bc27b44df482e20aed14392e

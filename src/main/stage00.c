@@ -5,12 +5,11 @@
 #include <string.h>
 
 #include "graphic.h"
-#include "Celebi.h"
-#include "MyModel.h"
+#include "texcube.h"
 #include "math.h"
 
-void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale);
 void SetViewMtx(Dynamic *);
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
 void debug_console_int(char *name, int variable, int pos);
 void debug_console_float(char *name, float variable, int pos);
 
@@ -85,14 +84,14 @@ void initStage00()
   cubescale = 1;
   cubepan = 0;
   cubeyaw = 0;
-  cam.pos.x = 300;
+  cam.pos.x = -72;
   cam.pos.y = 10;
-  cam.pos.z = 300;
-  cam.forward.x = 0;
+  cam.pos.z = -34;
+  cam.forward.x = 1;
   cam.forward.y = 0;
   cam.forward.z = 0;
   cam.xangle = 0;
-  cam.yangle = 0;
+  cam.yangle = 0; 
 }
 
 void SetViewMtx(Dynamic *dp)
@@ -126,52 +125,7 @@ void SetViewMtx(Dynamic *dp)
   gSPMatrix(glistp++, &(dp->viewing), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 }
 
-void makeDL00(void)
-{
-  /* Specify the display list buffer  */
-  glistp = gfx_glist;
-
-  /*  The initialization of RCP  */
-  gfxRCPInit();
-
-  /* Clear the frame buffer and the Z-buffer  */
-  gfxClearCfb();
-
-  SetViewMtx(&gfx_dynamic);
-
-  // guRotate(&gfx_dynamic.modeling, 0.0F, 0.0F, 0.0F, 0.0F);
-
-  /* Draw a square  */
-  draw_cube(&gfx_dynamic, t, Wtx_Celebi, 1);
-  draw_cube(&gfx_dynamic, t, Wtx_Cube, .1);
-
-  /* End the construction of the display list  */
-  gDPFullSync(glistp++);
-  gSPEndDisplayList(glistp++);
-
-  /* Check if all are put in the array  */
-  assert(glistp - gfx_glist < GFX_GLIST_LEN);
-
-  /* Activate the RSP task.  Switch display buffers at the end of the task. */
-  nuGfxTaskStart(&gfx_glist[0], (s32)(glistp - gfx_glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_NOSWAPBUFFER);
-
-  /* DEBUG CONSOLE!!!!!!!!!!!! Display characters on the frame buffer, debug console only */
-  nuDebConDisp(NU_SC_SWAPBUFFER);
-  debug_console_float("eyex", cam.pos.x + cam.forward.x, 1);
-  debug_console_float("eyey", cam.forward.y, 2);
-  debug_console_float("eyez", cam.pos.x + cam.forward.z, 3);
-  debug_console_float("posx", cam.pos.x, 4);
-  debug_console_float("posz", cam.pos.z, 5);
-  //debug_console_float("xangle", cam.xangle, 6);
-  //debug_console_float("yangle", cam.yangle, 7);
-  // debug_console_float("posy",cam.pos.y,6);
-  
-  nuDebConDisp(NU_SC_SWAPBUFFER);
-  gDPFullSync(glistp++);
-  gSPEndDisplayList(glistp++);
-}
-
-void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale)
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale)
 {
   int i = 0;
 
@@ -190,7 +144,8 @@ void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale)
 
   /* Rendering setup */
   gDPSetRenderMode(glistp++, G_RM_ZB_OPA_SURF, G_RM_ZB_OPA_SURF2);
-  gSPTexture(glistp++, 0x8000, 0x8000, 0, 0, G_ON);
+  //gSPTexture(glistp++, 0x8000, 0x8000, 0, 0, G_ON);
+  gSPTexture(glistp++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
   gDPSetCycleType(glistp++, G_CYC_1CYCLE);
   gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
   gSPClearGeometryMode(glistp++, 0xFFFFFFFF);
@@ -206,6 +161,51 @@ void draw_cube(Dynamic *dynamicp, float t, Gfx *model, float scale)
   /* Finalise and exit drawing */
   gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
   gDPPipeSync(glistp++);
+}
+
+void makeDL00(void)
+{
+  /* Specify the display list buffer  */
+  glistp = gfx_glist;
+
+  /*  The initialization of RCP  */
+  gfxRCPInit();
+
+  /* Clear the frame buffer and the Z-buffer  */
+  gfxClearCfb();
+
+  SetViewMtx(&gfx_dynamic);
+
+  // guRotate(&gfx_dynamic.modeling, 0.0F, 0.0F, 0.0F, 0.0F);
+
+  /* Draw models  */
+    
+  draw_mesh(&gfx_dynamic, gfx_cube, 1);
+
+  /* End the construction of the display list  */
+  gDPFullSync(glistp++);
+  gSPEndDisplayList(glistp++);
+
+  /* Check if all are put in the array  */
+  assert(glistp - gfx_glist < GFX_GLIST_LEN);
+
+  /* Activate the RSP task.  Switch display buffers at the end of the task. */
+  nuGfxTaskStart(&gfx_glist[0], (s32)(glistp - gfx_glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_NOSWAPBUFFER);
+
+  /* DEBUG CONSOLE!!!!!!!!!!!! Display characters on the frame buffer, debug console only */
+  nuDebConDisp(NU_SC_SWAPBUFFER);
+  debug_console_float("eyex", cam.pos.x + cam.forward.x, 1);
+  debug_console_float("eyey", cam.forward.y, 2);
+  debug_console_float("eyez", cam.pos.x + cam.forward.z, 3);
+  debug_console_float("posx", cam.pos.x, 4);
+  debug_console_float("posy",cam.pos.y,5);
+  debug_console_float("posz", cam.pos.z, 6);
+  debug_console_float("xangle", cam.xangle, 7);
+  debug_console_float("yangle", cam.yangle, 8);
+  
+  nuDebConDisp(NU_SC_SWAPBUFFER);
+  gDPFullSync(glistp++);
+  gSPEndDisplayList(glistp++);
 }
 
 void updateGame00()
