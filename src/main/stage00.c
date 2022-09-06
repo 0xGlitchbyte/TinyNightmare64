@@ -7,6 +7,7 @@
 #include "graphic.h"
 #include "texcube.h"
 #include "math.h"
+#include "debug.h"
 
 void SetViewMtx(Dynamic *);
 void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
@@ -87,11 +88,11 @@ void initStage00()
   cam.pos.x = 300;
   cam.pos.y = 10;
   cam.pos.z = 300;
-  cam.forward.x = 0;
-  cam.forward.y = 0;
-  cam.forward.z = 0;
-  cam.xangle = 0;
-  cam.yangle = 0;
+  cam.forward.x = 1;
+  cam.forward.y = 1;
+  cam.forward.z = 1;
+  cam.xangle = 1;
+  cam.yangle = 1;
 }
 
 void SetViewMtx(Dynamic *dp)
@@ -108,14 +109,27 @@ void SetViewMtx(Dynamic *dp)
     10000,                               // far plane clicaming
     1.0F                                 // matrix object scaling
   );
+  
+//  debug_printf("%f %f %f\n%f %f %f\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.forward.x, cam.forward.y, cam.forward.z);
 
-  guLookAt(&dp->viewing,
+/*  guLookAt(&dp->viewing,
     cam.pos.x,
     cam.pos.y,
     cam.pos.z,
     cam.pos.x + cam.forward.x,
     cam.pos.y + cam.forward.y,
     cam.pos.z + cam.forward.z,
+    0, 1, 0
+  );
+*/
+
+  guLookAt(&dp->viewing,
+    100,
+    100,
+    100,
+    0,
+    0,
+    0,
     0, 1, 0
   );
 
