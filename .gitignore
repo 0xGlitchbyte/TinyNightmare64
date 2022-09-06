@@ -56,5 +56,4 @@ dkms.conf
 .DS_Store
 n64_modern_3d_render_test
 portable*
-.vscode/c_cpp_properties.json
-.vscode/settings.json
+.vscode*
