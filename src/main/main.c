@@ -1,5 +1,6 @@
 #include <nusys.h>
 #include "main.h"
+#include "debug.h"
 
 /* Declaration of the prototype, STAGE 0 */
 void stage00(int);
@@ -19,6 +20,8 @@ void mainproc(void)
 {
   /* The initialization of graphic  */
   nuGfxInit();
+  
+  debug_initialize();
 
   contPattern = nuContInit();
 
