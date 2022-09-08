@@ -40,5 +40,3 @@ RUN dpkg --add-architecture i386 && \
     apt-get -y install n64-conv-tools && \
     apt-get -y install rsp-tools && \
     apt-get -y install root-compatibility-environment
-
-RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
