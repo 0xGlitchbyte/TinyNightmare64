@@ -21,7 +21,7 @@ ENV N64_LIBGCCDIR=/opt/crashsdk/lib/gcc/mips64-elf/11.2.0
 
 RUN dpkg --add-architecture i386 && \
     apt-get update && \
-    apt-get -y install build-essential git wget flex bison clang cppcheck && \
+    apt-get -y install build-essential git wget flex bison && \
     apt-get clean && \
     echo "deb [trusted=yes] https://crashoveride95.github.io/apt ./" > /etc/apt/sources.list.d/crashoveride95.list && \
     apt update && \
