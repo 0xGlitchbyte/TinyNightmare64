@@ -263,7 +263,7 @@ void stage00_draw(void)
 
     // Initialize the RCP and framebuffer
     rcp_init();
-    fb_clear(0, 128, 0);
+    fb_clear(128, 128, 32);
     
     // Setup the projection matrix
     guPerspective(&projection, &normal, 45, (float)SCREEN_WD / (float)SCREEN_HT, 10.0, 1000.0, 0.01);
