@@ -12,6 +12,7 @@ Handles the first level of the game.
 #include "axisMdl.h"
 #include "catherineTex.h"
 #include "catherineMdl.h"
+#include "animcube.h"
 #include "debug.h"
 
 
@@ -54,7 +55,7 @@ static float campos[3] = {0, -100, -300};
 static float camang[3] = {0, 0, -90};
 
 // Catherine
-Mtx catherineMtx[MESHCOUNT_Catherine];
+Mtx catherineMtx[MESHCOUNT_MyModel];
 s64ModelHelper catherine;
 float catherine_animspeed;
 
@@ -79,8 +80,8 @@ static char usb_buffer[USB_BUFFER_SIZE];
 void stage00_init(void)
 {
     // Initialize Catherine
-    sausage64_initmodel(&catherine, MODEL_Catherine, catherineMtx);
-    sausage64_set_anim(&catherine, ANIMATION_Catherine_Walk); 
+    sausage64_initmodel(&catherine, MODEL_MyModel, catherineMtx);
+    sausage64_set_anim(&catherine, ANIMATION_MyModel_ArmatureAction); 
     sausage64_set_predrawfunc(&catherine, catherine_predraw);
     sausage64_set_animcallback(&catherine, catherine_animcallback);
     
@@ -188,7 +189,7 @@ void stage00_update(void)
     // If the menu is open
     if (menuopen)
     {
-        int menuyscale[4] = {ANIMATIONCOUNT_Catherine, TOTALFACES, 2, 5};
+        int menuyscale[4] = {ANIMATIONCOUNT_MyModel, TOTALFACES, 2, 5};
     
         // Moving the cursor left/right
         if (contdata[0].trigger & R_JPAD)
@@ -373,7 +374,7 @@ void draw_menu()
     // List the animations
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 3);
     nuDebConCPuts(NU_DEB_CON_WINDOW0, "Anims");
-    for (i=0; i<ANIMATIONCOUNT_Catherine; i++) // Can also use MODEL_Catherine->animcount (but macro is faster on the CPU)
+    for (i=0; i<ANIMATIONCOUNT_MyModel; i++) // Can also use MODEL_Catherine->animcount (but macro is faster on the CPU)
     {
         nuDebConTextPos(NU_DEB_CON_WINDOW0, 4, 5+i);
         nuDebConCPuts(NU_DEB_CON_WINDOW0, MODEL_Catherine->anims[i].name);
@@ -483,7 +484,7 @@ char* command_listanims()
     memset(usb_buffer, 0, USB_BUFFER_SIZE);
 
     // Go through all the animations names and append them to the string
-    for (i=0; i<ANIMATIONCOUNT_Catherine; i++)
+    for (i=0; i<ANIMATIONCOUNT_MyModel; i++)
         sprintf(usb_buffer, "%s%s\n", usb_buffer, MODEL_Catherine->anims[i].name);
 
         // Return the string of animation names
@@ -507,7 +508,7 @@ char* command_setanim()
     debug_parsecommand(usb_buffer);
     
     // Compare the animation names
-    for (i=0; i<ANIMATIONCOUNT_Catherine; i++)
+    for (i=0; i<ANIMATIONCOUNT_MyModel; i++)
     {
         if (!strcmp(MODEL_Catherine->anims[i].name, usb_buffer))
         {
