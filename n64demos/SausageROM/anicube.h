@@ -81,7 +81,7 @@ static s64KeyFrame anim_MyModel_ArmatureAction_keyframes[] = {
 *********************************/
 
 static s64Mesh meshes_MyModel[] = {
-    {"Bone", 0, gfx_MyModel},
+    {"Bone", 0, gfx_MyModel_Bone},
 };
 
 static s64Animation anims_MyModel[] = {
