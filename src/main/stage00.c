@@ -100,14 +100,14 @@ void initStage00()
   cubescale = 1;
   cubepan = 0;
   cubeyaw = 0;
-  cam.pos.x = 300;
+  cam.pos.x = -72;
   cam.pos.y = 10;
-  cam.pos.z = 300;
+  cam.pos.z = -34;
   cam.forward.x = 1;
-  cam.forward.y = 1;
-  cam.forward.z = 1;
-  cam.xangle = 1;
-  cam.yangle = 1;
+  cam.forward.y = 0;
+  cam.forward.z = 0;
+  cam.xangle = 0;
+  cam.yangle = 0; 
 }
 
 
@@ -305,10 +305,10 @@ void makeDL00(void)
   debug_console_float("eyey", cam.forward.y, 2);
   debug_console_float("eyez", cam.pos.x + cam.forward.z, 3);
   debug_console_float("posx", cam.pos.x, 4);
-  debug_console_float("posz", cam.pos.z, 5);
-  //debug_console_float("xangle", cam.xangle, 6);
-  //debug_console_float("yangle", cam.yangle, 7);
-  // debug_console_float("posy",cam.pos.y,6);
+  debug_console_float("posy",cam.pos.y,5);
+  debug_console_float("posz", cam.pos.z, 6);
+  debug_console_float("xangle", cam.xangle, 7);
+  debug_console_float("yangle", cam.yangle, 8);
   
   nuDebConDisp(NU_SC_SWAPBUFFER);
   gDPFullSync(glistp++);
