@@ -3,6 +3,7 @@
 
 Gfx          gfx_glist[GFX_GLIST_LEN];
 Dynamic      gfx_dynamic;
+Dynamic      gfx_dynamic_cube2;
 Gfx*         glistp;
 u32          gfx_gtask_no = 0;
 

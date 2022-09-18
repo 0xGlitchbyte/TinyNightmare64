@@ -10,7 +10,7 @@
 #include "debug.h"
 
 void SetViewMtx(Dynamic *);
-void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset);
 void debug_console_int(char *name, int variable, int pos);
 void debug_console_float(char *name, float variable, int pos);
 
@@ -139,13 +139,13 @@ void SetViewMtx(Dynamic *dp)
   gSPMatrix(glistp++, &(dp->viewing), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 }
 
-void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale)
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset)
 {
   int i = 0;
 
   /* Create matrices for mult */
   /* CUBE IS AT CENTER OF EARTH */
-  guTranslate(&dynamicp->pos, 0, 0, 0);
+  guTranslate(&dynamicp->pos, 0 + x_offset, 0 + x_offset, 0);
   guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
   guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
   guScale(&dynamicp->scale, cubescale * scale, cubescale * scale, cubescale * scale);
@@ -194,7 +194,8 @@ void makeDL00(void)
 
   /* Draw models  */
     
-  draw_mesh(&gfx_dynamic, gfx_cube, 1);
+  draw_mesh(&gfx_dynamic, gfx_cube, 1, 30);
+  draw_mesh(&gfx_dynamic_cube2, gfx_cube, 2, -20);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
