@@ -12,6 +12,19 @@
 	Copyright (C) 1997-1999, NINTENDO Co,Ltd.
 */
 
+/*   PLEASE ATTENTION   */
+/*   PLEASE ATTENTION   */
+/*   PLEASE ATTENTION   */
+/*   PLEASE ATTENTION   */
+/*   PLEASE ATTENTION   */
+
+/*   THE CURRENT STATE OF THIS FILE IS LINKING THE APP  */
+/*   TO THE DEBUGGING VERSIONS OF LIBULTRA AND NUSYS  */
+/*   IN ORDER TO BRING IT BACK TO NORMAL  */
+/*   libultra_d --> libultra_rom  */ 
+/*   libnusys_d --> libnusys  */
+/*   ALL INSTANCES MUST BE CHANGED  */
+
 OUTPUT_ARCH (mips)
 
 #include <nusys.h>
@@ -56,8 +69,8 @@ SECTIONS
       /usr/lib/n64/nusys/nusys_rom.o(.text);
       BUILD_DIR/src/main*.o(.text);
 
-      */libultra_rom.a:*.o(.text);
-      */libnusys.a:*.o(.text);
+      */libultra_d.a:*.o(.text);
+      */libnusys_d.a:*.o(.text);
       */libgcc.a:*.o(.text);
       */libnustd.a:*.o(.text);
       /usr/lib/n64/PR/rspboot.o(.text);
@@ -72,8 +85,8 @@ SECTIONS
       /usr/lib/n64/nusys/nusys_rom.o(.data*);
       BUILD_DIR/src/main*.o(.data*);
 
-      */libultra_rom.a:*.o(.data*);
-      */libnusys.a:*.o(.data*);
+      */libultra_d.a:*.o(.data*);
+      */libnusys_d.a:*.o(.data*);
       /usr/lib/n64/PR/rspboot.o(.data*);
       /usr/lib/n64/PR/gspF3DEX2.fifo.o(.data*);
       /usr/lib/n64/PR/gspL3DEX2.fifo.o(.data*);
@@ -86,8 +99,8 @@ SECTIONS
       /usr/lib/n64/nusys/nusys_rom.o(.*rodata*);
       BUILD_DIR/src/main*.o(.*rodata*);
 
-      */libultra_rom.a:*.o(.*rodata*);
-      */libnusys.a:*.o(.*rodata*);
+      */libultra_d.a:*.o(.*rodata*);
+      */libnusys_d.a:*.o(.*rodata*);
       */libnustd.a:*.o(.*rodata*);
       */libgcc.a:*.o(.*rodata*);
    }
@@ -99,12 +112,12 @@ SECTIONS
       /usr/lib/n64/nusys/nusys_rom.o(.*bss*);
       BUILD_DIR/src/main*.o(.*bss*);
 
-      */libultra_rom.a:*.o(COMMON);
-      */libultra_rom.a:*.o(.scommon);
-      */libultra_rom.a:*.o(.*bss*);
-      */libnusys.a:*.o(COMMON);
-      */libnusys.a:*.o(.scommon);
-      */libnusys.a:*.o(.*bss*);
+      */libultra_d.a:*.o(COMMON);
+      */libultra_d.a:*.o(.scommon);
+      */libultra_d.a:*.o(.*bss*);
+      */libnusys_d.a:*.o(COMMON);
+      */libnusys_d.a:*.o(.scommon);
+      */libnusys_d.a:*.o(.*bss*);
    }
    END_NOLOAD(code)
    /* Discard everything not specifically mentioned above. */

@@ -8,6 +8,8 @@
 *.ko
 *.obj
 *.elf
+*.ld
+*.z64
 
 # Linker output
 *.ilk

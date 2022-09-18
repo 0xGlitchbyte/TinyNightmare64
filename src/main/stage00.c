@@ -4,9 +4,14 @@
 #include <nustd/math.h>
 #include <string.h>
 
+#include "sausage64.h"
+#include "catherineTex.h"
+#include "catherineMdl.h"
+
 #include "graphic.h"
 #include "texcube.h"
 #include "math.h"
+#include "debug.h"
 
 void SetViewMtx(Dynamic *);
 void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
@@ -15,6 +20,17 @@ void debug_console_float(char *name, float variable, int pos);
 
 void set_angle(float xangle_diff, float yangle_diff);
 void move_to(float view_speed, float forward_speed, float up_speed);
+
+
+
+static Mtx projection, viewing, modeling;
+static u16 normal;
+void catherine_predraw(u16 part);
+void catherine_animcallback(u16 anim);
+
+
+
+
 
 int lim(u32 input);
 int t = 1;
@@ -94,6 +110,81 @@ void initStage00()
   cam.yangle = 0; 
 }
 
+
+
+
+
+
+
+
+Mtx catherineMtx[MESHCOUNT_Catherine];
+s64ModelHelper catherine;
+float catherine_animspeed;
+
+// Face animation
+static u16 faceindex;
+static u32 facetick;
+static OSTime facetime;
+static FaceAnim* faceanim;
+
+void create_playerobject()
+{
+    // Initialize Catherine
+    sausage64_initmodel(&catherine, MODEL_Catherine, catherineMtx);
+    sausage64_set_anim(&catherine, ANIMATION_Catherine_Walk); 
+    sausage64_set_predrawfunc(&catherine, catherine_predraw);
+    sausage64_set_animcallback(&catherine, catherine_animcallback);
+    
+    // Set catherine's animation speed based on region
+    #if TV_TYPE == PAL
+        catherine_animspeed = 0.66;
+    #else
+        catherine_animspeed = 0.5;
+    #endif
+    
+    
+    // Initialize the face animation
+    facetick = 60;
+    faceindex = 0;
+    facetime = osGetTime() + OS_USEC_TO_CYCLES(22222);
+    faceanim = &catherine_faces[0];
+}
+
+
+void catherine_predraw(u16 part)
+{
+    // Handle face drawing
+    switch (part)
+    {
+        case MESH_Catherine_Head:
+            gDPLoadTextureBlock(glistp++, faceanim->faces[faceindex], G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 64, 0, G_TX_CLAMP, G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+            break;
+    }
+}
+
+void catherine_animcallback(u16 anim)
+{
+    // Go to idle animation when we finished attacking
+    switch(anim)
+    {
+        case ANIMATION_Catherine_Attack1:
+        case ANIMATION_Catherine_ThrowKnife:
+            sausage64_set_anim(&catherine, ANIMATION_Catherine_Idle);
+            break;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 void SetViewMtx(Dynamic *dp)
 {
   u16 perspNorm;
@@ -108,14 +199,27 @@ void SetViewMtx(Dynamic *dp)
     10000,                               // far plane clicaming
     1.0F                                 // matrix object scaling
   );
+  
+//  debug_printf("%f %f %f\n%f %f %f\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.forward.x, cam.forward.y, cam.forward.z);
 
-  guLookAt(&dp->viewing,
+/*  guLookAt(&dp->viewing,
     cam.pos.x,
     cam.pos.y,
     cam.pos.z,
     cam.pos.x + cam.forward.x,
     cam.pos.y + cam.forward.y,
     cam.pos.z + cam.forward.z,
+    0, 1, 0
+  );
+*/
+
+  guLookAt(&dp->viewing,
+    100,
+    100,
+    100,
+    0,
+    0,
+    0,
     0, 1, 0
   );
 
@@ -180,7 +284,10 @@ void makeDL00(void)
 
   /* Draw models  */
     
-  draw_mesh(&gfx_dynamic, gfx_cube, 1);
+  //draw_mesh(&gfx_dynamic, gfx_cube, 1);
+
+   // Draw catherine
+    sausage64_drawmodel(&glistp, &catherine);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
