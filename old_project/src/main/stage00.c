@@ -4,33 +4,18 @@
 #include <nustd/math.h>
 #include <string.h>
 
-#include "sausage64.h"
-#include "catherineTex.h"
-#include "catherineMdl.h"
-
 #include "graphic.h"
 #include "texcube.h"
 #include "math.h"
 #include "debug.h"
 
 void SetViewMtx(Dynamic *);
-void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale);
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset);
 void debug_console_int(char *name, int variable, int pos);
 void debug_console_float(char *name, float variable, int pos);
 
 void set_angle(float xangle_diff, float yangle_diff);
 void move_to(float view_speed, float forward_speed, float up_speed);
-
-
-
-static Mtx projection, viewing, modeling;
-static u16 normal;
-void catherine_predraw(u16 part);
-void catherine_animcallback(u16 anim);
-
-
-
-
 
 int lim(u32 input);
 int t = 1;
@@ -100,90 +85,15 @@ void initStage00()
   cubescale = 1;
   cubepan = 0;
   cubeyaw = 0;
-  cam.pos.x = -72;
+  cam.pos.x = 300;
   cam.pos.y = 10;
-  cam.pos.z = -34;
+  cam.pos.z = 300;
   cam.forward.x = 1;
-  cam.forward.y = 0;
-  cam.forward.z = 0;
-  cam.xangle = 0;
-  cam.yangle = 0; 
+  cam.forward.y = 1;
+  cam.forward.z = 1;
+  cam.xangle = 1;
+  cam.yangle = 1;
 }
-
-
-
-
-
-
-
-
-Mtx catherineMtx[MESHCOUNT_Catherine];
-s64ModelHelper catherine;
-float catherine_animspeed;
-
-// Face animation
-static u16 faceindex;
-static u32 facetick;
-static OSTime facetime;
-static FaceAnim* faceanim;
-
-void create_playerobject()
-{
-    // Initialize Catherine
-    sausage64_initmodel(&catherine, MODEL_Catherine, catherineMtx);
-    sausage64_set_anim(&catherine, ANIMATION_Catherine_Walk); 
-    sausage64_set_predrawfunc(&catherine, catherine_predraw);
-    sausage64_set_animcallback(&catherine, catherine_animcallback);
-    
-    // Set catherine's animation speed based on region
-    #if TV_TYPE == PAL
-        catherine_animspeed = 0.66;
-    #else
-        catherine_animspeed = 0.5;
-    #endif
-    
-    
-    // Initialize the face animation
-    facetick = 60;
-    faceindex = 0;
-    facetime = osGetTime() + OS_USEC_TO_CYCLES(22222);
-    faceanim = &catherine_faces[0];
-}
-
-
-void catherine_predraw(u16 part)
-{
-    // Handle face drawing
-    switch (part)
-    {
-        case MESH_Catherine_Head:
-            gDPLoadTextureBlock(glistp++, faceanim->faces[faceindex], G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 64, 0, G_TX_CLAMP, G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-            break;
-    }
-}
-
-void catherine_animcallback(u16 anim)
-{
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_Catherine_Attack1:
-        case ANIMATION_Catherine_ThrowKnife:
-            sausage64_set_anim(&catherine, ANIMATION_Catherine_Idle);
-            break;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
 
 void SetViewMtx(Dynamic *dp)
 {
@@ -229,13 +139,13 @@ void SetViewMtx(Dynamic *dp)
   gSPMatrix(glistp++, &(dp->viewing), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 }
 
-void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale)
+void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset)
 {
   int i = 0;
 
   /* Create matrices for mult */
   /* CUBE IS AT CENTER OF EARTH */
-  guTranslate(&dynamicp->pos, 0, 0, 0);
+  guTranslate(&dynamicp->pos, 0 + x_offset, 0 + x_offset, 0);
   guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
   guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
   guScale(&dynamicp->scale, cubescale * scale, cubescale * scale, cubescale * scale);
@@ -284,10 +194,8 @@ void makeDL00(void)
 
   /* Draw models  */
     
-  //draw_mesh(&gfx_dynamic, gfx_cube, 1);
-
-   // Draw catherine
-    sausage64_drawmodel(&glistp, &catherine);
+  draw_mesh(&gfx_dynamic, gfx_cube, 1, 30);
+  draw_mesh(&gfx_dynamic_cube2, gfx_cube, 2, -20);
 
   /* End the construction of the display list  */
   gDPFullSync(glistp++);
@@ -305,10 +213,10 @@ void makeDL00(void)
   debug_console_float("eyey", cam.forward.y, 2);
   debug_console_float("eyez", cam.pos.x + cam.forward.z, 3);
   debug_console_float("posx", cam.pos.x, 4);
-  debug_console_float("posy",cam.pos.y,5);
-  debug_console_float("posz", cam.pos.z, 6);
-  debug_console_float("xangle", cam.xangle, 7);
-  debug_console_float("yangle", cam.yangle, 8);
+  debug_console_float("posz", cam.pos.z, 5);
+  //debug_console_float("xangle", cam.xangle, 6);
+  //debug_console_float("yangle", cam.yangle, 7);
+  // debug_console_float("posy",cam.pos.y,6);
   
   nuDebConDisp(NU_SC_SWAPBUFFER);
   gDPFullSync(glistp++);
