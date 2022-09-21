@@ -2,6 +2,9 @@
 // By Buu342
 
 
+#define MODEL_Sheep (&mdl_Sheep)
+
+
 // Custom combine mode to allow mixing primitive and vertex colors
 #ifndef G_CC_PRIMLITE
     #define G_CC_PRIMLITE SHADE,0,PRIMITIVE,0,0,0,0,PRIMITIVE
@@ -280,3 +283,9 @@ static Gfx gfx_Sheep[] = {
     gsSPEndDisplayList(),
 };
 
+
+static s64Mesh meshes_Sheep[] = {
+    {"Sheep", 0, gfx_Sheep}
+};
+
+static s64ModelData mdl_Sheep = {1, 0, meshes_Sheep, NULL};
