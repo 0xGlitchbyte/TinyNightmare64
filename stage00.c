@@ -121,8 +121,6 @@ void stage00_update(void)
     // Advance Catherine's animation
     sausage64_advance_anim(&catherine, catherine_animspeed);
     
-    sausage64_initmodel(&sheep, MODEL_Sheep, sheepMtx);
-    
     /* -------- Face Animation -------- */
     
     // If the frame time has elapsed
