@@ -52,8 +52,8 @@ static s8   curx = 0;
 static s8   cury = 0;
 
 // Camera
-static float campos[3] = {0, -100, -300};
-static float camang[3] = {0, 0, -90};
+static float campos[3] = {0, -50, -400};
+static float camang[3] = {0, 10, 5};
 
 // Catherine
 Mtx catherineMtx[MESHCOUNT_MyModel];
