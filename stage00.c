@@ -12,8 +12,8 @@ Handles the first level of the game.
 #include "axisMdl.h"
 #include "catherineTex.h"
 #include "catherineMdl.h"
-#include "animcube.h"
-#include "sheep.h"
+#include "palette.h"
+#include "nick.h"
 #include "debug.h"
 
 
@@ -52,16 +52,13 @@ static s8   curx = 0;
 static s8   cury = 0;
 
 // Camera
-static float campos[3] = {0, -50, -400};
-static float camang[3] = {0, 10, 5};
+static float campos[3] = {0, -100, -300};
+static float camang[3] = {0, 0, -90};
 
 // Catherine
 Mtx catherineMtx[MESHCOUNT_MyModel];
 s64ModelHelper catherine;
 float catherine_animspeed;
-
-s64ModelHelper sheep;
-Mtx sheepMtx[1];
 
 // Face animation
 static u16 faceindex;
@@ -85,8 +82,7 @@ void stage00_init(void)
 {
     // Initialize Catherine
     sausage64_initmodel(&catherine, MODEL_MyModel, catherineMtx);
-    sausage64_initmodel(&sheep, MODEL_Sheep, sheepMtx);
-    sausage64_set_anim(&catherine, ANIMATION_MyModel_ArmatureAction); 
+    sausage64_set_anim(&catherine, ANIMATION_MyModel_run); 
     sausage64_set_predrawfunc(&catherine, catherine_predraw);
     sausage64_set_animcallback(&catherine, catherine_animcallback);
     
@@ -120,6 +116,7 @@ void stage00_update(void)
     
     // Advance Catherine's animation
     sausage64_advance_anim(&catherine, catherine_animspeed);
+    
     
     /* -------- Face Animation -------- */
     
@@ -339,7 +336,6 @@ void stage00_draw(void)
     
     // Draw catherine
     sausage64_drawmodel(&glistp, &catherine);
-    sausage64_drawmodel(&glistp, &sheep);
     
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
@@ -468,7 +464,7 @@ void catherine_animcallback(u16 anim)
     {
         case ANIMATION_Catherine_Attack1:
         case ANIMATION_Catherine_ThrowKnife:
-            sausage64_set_anim(&catherine, ANIMATION_Catherine_Idle);
+            sausage64_set_anim(&catherine, ANIMATION_MyModel_run);
             break;
     }
 }
