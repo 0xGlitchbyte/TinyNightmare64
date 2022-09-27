@@ -24,6 +24,38 @@ Handles the first level of the game.
 #define USB_BUFFER_SIZE 256
 
 
+typedef struct {
+  //Camera params
+  Mtx   projection;
+  Mtx   modeling;
+  Mtx   viewing;
+  Mtx   camRot;
+
+  //Cube-specific params
+  Mtx	rotx;
+  Mtx   roty;
+
+  Mtx	  pos_mtx;
+  Mtx 	scale;
+  float pos[3];
+  float dir[3];
+  float speed;
+} Entity;
+
+
+Entity nick = 
+{ //Camera params
+      //Mtx   projection;
+      //Mtx   modeling;
+      //Mtx   viewing;
+      //Mtx   camRot;
+
+      //Cube-specific params
+      pos: { 20, 1, 0},
+      dir: { -1, 0, 0},
+      speed: 0
+};
+
 /*********************************
         Function Prototypes
 *********************************/
@@ -57,6 +89,30 @@ static float camang[3] = {0, 0, -90};
 
 // Catherine
 Mtx catherineMtx[MESHCOUNT_MyModel];
+Mtx catherinePos = {
+    m: {
+        {},
+        {},
+        {},
+        {}
+    }    
+};
+
+
+/*
+ * 4x4 matrix, fixed point s15.16 format.
+ * First 8 words are integer portion of the 4x4 matrix
+ * Last 8 words are the fraction portion of the 4x4 matrix
+ */
+/*
+typedef long	Mtx_t[4][4];
+
+typedef union {
+    Mtx_t		m;
+    long long int	force_structure_alignment;
+} Mtx;
+*/
+
 s64ModelHelper catherine;
 float catherine_animspeed;
 
@@ -163,7 +219,23 @@ void stage00_update(void)
         camang[1] = 0;
         camang[2] = -90;
     }
-    
+
+    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
+        //sausage64_set_anim(&catherine, ANIMATION_MyModel_idle);
+    }
+    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
+
+    }
+
+/*
+    float nick_dir[] = { -1, 0, 0 };
+
+    float nick_speed = 0;
+    */
+
+    nick.pos[1] += contdata->stick_y / 20;
+    nick.pos[0] += contdata->stick_x / 20;
+    /*
     // Toggle the menu when L is pressed
     if (contdata[0].trigger & L_TRIG)
         menuopen = !menuopen;
@@ -183,6 +255,7 @@ void stage00_update(void)
         campos[0] += contdata->stick_x/10;
         campos[1] += contdata->stick_y/10;
     }
+    */
     
         
     /* -------- Menu -------- */
@@ -333,7 +406,13 @@ void stage00_draw(void)
     // Draw an axis on the floor for directional reference
     if (drawaxis)
         gSPDisplayList(glistp++, gfx_axis);
-    
+
+    //guTranslate(&nick_pos_mtx, nick_pos[0], nick_pos[1], nick_pos[2]);
+
+    guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
+    //guRotateRPYF(&nick.pos_mtx, camang[2], camang[0], camang[1]);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+
     // Draw catherine
     sausage64_drawmodel(&glistp, &catherine);
     
