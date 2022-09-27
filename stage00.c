@@ -12,7 +12,8 @@ Handles the first level of the game.
 #include "axisMdl.h"
 #include "catherineTex.h"
 #include "catherineMdl.h"
-#include "animcube.h"
+#include "palette.h"
+#include "nick.h"
 #include "debug.h"
 
 
@@ -81,7 +82,7 @@ void stage00_init(void)
 {
     // Initialize Catherine
     sausage64_initmodel(&catherine, MODEL_MyModel, catherineMtx);
-    sausage64_set_anim(&catherine, ANIMATION_MyModel_ArmatureAction); 
+    sausage64_set_anim(&catherine, ANIMATION_MyModel_run); 
     sausage64_set_predrawfunc(&catherine, catherine_predraw);
     sausage64_set_animcallback(&catherine, catherine_animcallback);
     
@@ -463,7 +464,7 @@ void catherine_animcallback(u16 anim)
     {
         case ANIMATION_Catherine_Attack1:
         case ANIMATION_Catherine_ThrowKnife:
-            sausage64_set_anim(&catherine, ANIMATION_Catherine_Idle);
+            sausage64_set_anim(&catherine, ANIMATION_MyModel_run);
             break;
     }
 }

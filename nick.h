@@ -102,7 +102,7 @@ static Gfx gfx_MyModel_chest[] = {
     gsDPSetTextureFilter(G_TF_BILERP),
     gsSPClearGeometryMode(0xFFFFFFFF),
     gsSPSetGeometryMode(G_SHADE | G_ZBUFFER | G_CULL_BACK | G_SHADING_SMOOTH | G_LIGHTING),
-    gsDPLoadTextureBlock(Material, G_IM_FMT_RGBA, G_IM_SIZ_16b, 8, 8, 0, G_TX_MIRROR, G_TX_MIRROR, 3, 3, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(Palette_C_dummy_aligner1, G_IM_FMT_RGBA, G_IM_SIZ_16b, 8, 8, 0, G_TX_MIRROR, G_TX_MIRROR, 3, 3, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 0, 3, 1, 0),
     gsSP2Triangles(4, 5, 6, 0, 5, 7, 6, 0),
