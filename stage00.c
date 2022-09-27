@@ -85,6 +85,7 @@ void stage00_init(void)
 {
     // Initialize Catherine
     sausage64_initmodel(&catherine, MODEL_MyModel, catherineMtx);
+    sausage64_initmodel(&sheep, MODEL_Sheep, sheepMtx);
     sausage64_set_anim(&catherine, ANIMATION_MyModel_ArmatureAction); 
     sausage64_set_predrawfunc(&catherine, catherine_predraw);
     sausage64_set_animcallback(&catherine, catherine_animcallback);
@@ -338,10 +339,7 @@ void stage00_draw(void)
     
     // Draw catherine
     sausage64_drawmodel(&glistp, &catherine);
-
-    gSPMatrix((*glistp)++, OS_K0_TO_PHYSICAL(sheepMtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
-    gSPDisplayList((*glistp)++, &sheep);
-    gSPPopMatrix((*glistp)++, G_MTX_MODELVIEW);
+    sausage64_drawmodel(&glistp, &sheep);
     
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
