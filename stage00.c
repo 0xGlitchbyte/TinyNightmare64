@@ -4,6 +4,7 @@
 Handles the first level of the game.
 ***************************************************************/
 
+#include <math.h>
 #include <nusys.h>
 #include <string.h> // Needed for CrashSDK compatibility
 #include "config.h"
@@ -24,10 +25,57 @@ Handles the first level of the game.
 #define USB_BUFFER_SIZE 256
 
 
+typedef struct {
+  //Camera params
+  Mtx   projection;
+  Mtx   modeling;
+  Mtx   viewing;
+  Mtx   camRot;
+
+  //Cube-specific params
+  Mtx	rotx;
+  Mtx   roty;
+
+  Mtx	  pos_mtx;
+  Mtx 	scale;
+  float pos[3];
+  float dir[3];
+  float speed;
+  
+  // I changed the name "pan" to "pitch", this struct is inspired by the
+  // "Dynamic" struct from our earlier example, but the word "pan"
+  // means something else in cameras/graphics
+  // 
+  // https://en.wikipedia.org/wiki/Aircraft_principal_axes
+  // 
+  // also from the N64 library docs:
+  // 
+  // /* Return rotation matrix given roll, pitch, and yaw in degrees */
+  // void guRotateRPYF(float mf[4][4], float r, float p, float h)
+
+  float pitch;
+  float yaw;
+} Entity;
+
+
+Entity nick = 
+{ //Camera params
+      //Mtx   projection;
+      //Mtx   modeling;
+      //Mtx   viewing;
+      //Mtx   camRot;
+
+      //Cube-specific params
+      pos: { 20, 1, 0},
+      dir: { -1, 0, 0},
+      speed: 0
+};
+
 /*********************************
         Function Prototypes
 *********************************/
 
+void draw_debug_data();
 void draw_menu();
 void catherine_predraw(u16 part);
 void catherine_animcallback(u16 anim);
@@ -163,27 +211,21 @@ void stage00_update(void)
         camang[1] = 0;
         camang[2] = -90;
     }
-    
-    // Toggle the menu when L is pressed
-    if (contdata[0].trigger & L_TRIG)
-        menuopen = !menuopen;
-    
-    // Handle camera movement and rotation
-    if (contdata[0].button & Z_TRIG)
-    {
-        campos[2] += contdata->stick_y/10;
+
+    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
+        //sausage64_set_anim(&catherine, ANIMATION_MyModel_idle);
     }
-    else if (contdata[0].button & R_TRIG)
-    {
-        camang[0] += contdata->stick_x/10;
-        camang[2] -= contdata->stick_y/10;
+    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
+
     }
-    else
-    {
-        campos[0] += contdata->stick_x/10;
-        campos[1] += contdata->stick_y/10;
-    }
-    
+
+    nick.yaw = atan2(contdata->stick_x, -1 * contdata->stick_y) * (180 / M_PI);
+
+    nick.pos[1] += contdata->stick_y / 20;
+    nick.pos[0] += contdata->stick_x / 20;
+
+    campos[2] += contdata->stick_y / 20;
+    campos[0] += contdata->stick_x / 20;
         
     /* -------- Menu -------- */
     
@@ -333,7 +375,15 @@ void stage00_draw(void)
     // Draw an axis on the floor for directional reference
     if (drawaxis)
         gSPDisplayList(glistp++, gfx_axis);
-    
+
+    guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
+    guRotate(&nick.rotx, nick.pitch, 1, 0, 0);
+    guRotate(&nick.roty, nick.yaw, 0, 0, 1);
+
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
     // Draw catherine
     sausage64_drawmodel(&glistp, &catherine);
     
@@ -356,6 +406,7 @@ void stage00_draw(void)
     // Draw the menu (doesn't work on PAL)
     #if TV_TYPE != PAL
         nuDebConClear(NU_DEB_CON_WINDOW0);
+        draw_debug_data();
         if (menuopen)
             draw_menu();
         nuDebConDisp(NU_SC_SWAPBUFFER);
@@ -367,6 +418,17 @@ void stage00_draw(void)
     draw_menu
     Draws the menu
 ==============================*/
+
+
+void draw_debug_data()
+{
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 3);
+    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Do a Barrel Roll");
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 4);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_x: %d", contdata->stick_x);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 5);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_y: %d", contdata->stick_y);
+}
 
 void draw_menu()
 {
