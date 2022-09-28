@@ -1,7 +1,8 @@
 /***************************************************************
                            stage00.c
-                               
-Handles the first level of the game.
+                
+  first acomplished attempt to render and move nick around
+             and make camera follow him!
 ***************************************************************/
 
 #include <math.h>
@@ -26,49 +27,50 @@ Handles the first level of the game.
 
 
 typedef struct {
-  //Camera params
-  Mtx   projection;
-  Mtx   modeling;
-  Mtx   viewing;
-  Mtx   camRot;
+    /*Camera params*/
+    Mtx   projection;
+    Mtx   modeling;
+    Mtx   viewing;
+    Mtx   camRot;   
+    /*Cube-specific params*/
+    Mtx	rotx;
+    Mtx   roty; 
+    Mtx	  pos_mtx;
+    Mtx 	scale;
+    float pos[3];
+    float dir[3];
+    float speed;
 
-  //Cube-specific params
-  Mtx	rotx;
-  Mtx   roty;
+     /*
+     I changed the name "pan" to "pitch", this struct is inspired by the
+     "Dynamic" struct from our earlier example, but the word "pan"
+     means something else in cameras/graphics
+     
+     https://en.wikipedia.org/wiki/Aircraft_principal_axes
+     
+     also from the N64 library docs:
+     
+     *Return rotation matrix given roll, pitch, and yaw in degrees*
+     void guRotateRPYF(float mf[4][4], float r, float p, float h) 
+     */
 
-  Mtx	  pos_mtx;
-  Mtx 	scale;
-  float pos[3];
-  float dir[3];
-  float speed;
-  
-  // I changed the name "pan" to "pitch", this struct is inspired by the
-  // "Dynamic" struct from our earlier example, but the word "pan"
-  // means something else in cameras/graphics
-  // 
-  // https://en.wikipedia.org/wiki/Aircraft_principal_axes
-  // 
-  // also from the N64 library docs:
-  // 
-  // /* Return rotation matrix given roll, pitch, and yaw in degrees */
-  // void guRotateRPYF(float mf[4][4], float r, float p, float h)
-
-  float pitch;
-  float yaw;
+    float pitch;
+    float yaw;
 } Entity;
 
 
 Entity nick = 
-{ //Camera params
-      //Mtx   projection;
-      //Mtx   modeling;
-      //Mtx   viewing;
-      //Mtx   camRot;
+{
+    /*Camera params*/
+    //Mtx   projection;
+    //Mtx   modeling;
+    //Mtx   viewing;
+    //Mtx   camRot
 
-      //Cube-specific params
-      pos: { 20, 1, 0},
-      dir: { -1, 0, 0},
-      speed: 0
+    /*Cube-specific params*/
+    pos: { 20, 1, 0},
+    dir: { -1, 0, 0},
+    speed: 0
 };
 
 /*********************************
@@ -100,7 +102,7 @@ static s8   curx = 0;
 static s8   cury = 0;
 
 // Camera
-static float campos[3] = {0, -100, -300};
+static float campos[3] = {0, -100, -600};
 static float camang[3] = {0, 0, -90};
 
 // Catherine
@@ -225,7 +227,7 @@ void stage00_update(void)
     nick.pos[0] += contdata->stick_x / 20;
 
     campos[2] += contdata->stick_y / 20;
-    campos[0] += contdata->stick_x / 20;
+    campos[0] += (-contdata->stick_x / 20);
         
     /* -------- Menu -------- */
     
