@@ -105,30 +105,6 @@ static float camang[3] = {0, 0, -90};
 
 // Catherine
 Mtx catherineMtx[MESHCOUNT_MyModel];
-Mtx catherinePos = {
-    m: {
-        {},
-        {},
-        {},
-        {}
-    }    
-};
-
-
-/*
- * 4x4 matrix, fixed point s15.16 format.
- * First 8 words are integer portion of the 4x4 matrix
- * Last 8 words are the fraction portion of the 4x4 matrix
- */
-/*
-typedef long	Mtx_t[4][4];
-
-typedef union {
-    Mtx_t		m;
-    long long int	force_structure_alignment;
-} Mtx;
-*/
-
 s64ModelHelper catherine;
 float catherine_animspeed;
 
