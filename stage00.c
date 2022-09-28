@@ -42,8 +42,9 @@ typedef struct {
   float dir[3];
   float speed;
   
-  // might want to use different names, I think this is inspired by this concept
-  // copied from the "Dynamic" struct from our earlier example, but pan means something else
+  // I changed the name "pan" to "pitch", this struct is inspired by the
+  // "Dynamic" struct from our earlier example, but the word "pan"
+  // means something else in cameras/graphics
   // 
   // https://en.wikipedia.org/wiki/Aircraft_principal_axes
   // 
@@ -52,7 +53,7 @@ typedef struct {
   // /* Return rotation matrix given roll, pitch, and yaw in degrees */
   // void guRotateRPYF(float mf[4][4], float r, float p, float h)
 
-  float pan;
+  float pitch;
   float yaw;
 } Entity;
 
@@ -74,6 +75,7 @@ Entity nick =
         Function Prototypes
 *********************************/
 
+void draw_debug_data();
 void draw_menu();
 void catherine_predraw(u16 part);
 void catherine_animcallback(u16 anim);
@@ -241,38 +243,10 @@ void stage00_update(void)
 
     }
 
-/*
-    float nick_dir[] = { -1, 0, 0 };
-
-    float nick_speed = 0;
-    */
-
-    nick.pan = contdata->stick_y;
+    nick.yaw = atan2(contdata->stick_x, -1 * contdata->stick_y) * (180 / M_PI);
 
     nick.pos[1] += contdata->stick_y / 20;
     nick.pos[0] += contdata->stick_x / 20;
-    /*
-    // Toggle the menu when L is pressed
-    if (contdata[0].trigger & L_TRIG)
-        menuopen = !menuopen;
-    
-    // Handle camera movement and rotation
-    if (contdata[0].button & Z_TRIG)
-    {
-        campos[2] += contdata->stick_y/10;
-    }
-    else if (contdata[0].button & R_TRIG)
-    {
-        camang[0] += contdata->stick_x/10;
-        camang[2] -= contdata->stick_y/10;
-    }
-    else
-    {
-        campos[0] += contdata->stick_x/10;
-        campos[1] += contdata->stick_y/10;
-    }
-    */
-    
         
     /* -------- Menu -------- */
     
@@ -423,12 +397,10 @@ void stage00_draw(void)
     if (drawaxis)
         gSPDisplayList(glistp++, gfx_axis);
 
-    //guTranslate(&nick_pos_mtx, nick_pos[0], nick_pos[1], nick_pos[2]);
-
     guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
-    guRotateRPYF(&nick.rotx, camang[2], camang[0], camang[1]);
-    //guRotate(&nick.rotx, nick.pan, 1, 0, 0);
-    guRotate(&nick.roty, nick.yaw, 1, 0, 0);
+    guRotate(&nick.rotx, nick.pitch, 1, 0, 0);
+    guRotate(&nick.roty, nick.yaw, 0, 0, 1);
+
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
