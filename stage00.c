@@ -223,6 +223,9 @@ void stage00_update(void)
 
     nick.pos[1] += contdata->stick_y / 20;
     nick.pos[0] += contdata->stick_x / 20;
+
+    campos[2] += contdata->stick_y / 20;
+    campos[0] += contdata->stick_x / 20;
         
     /* -------- Menu -------- */
     
