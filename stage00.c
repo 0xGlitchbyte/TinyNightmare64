@@ -4,6 +4,7 @@
 Handles the first level of the game.
 ***************************************************************/
 
+#include <math.h>
 #include <nusys.h>
 #include <string.h> // Needed for CrashSDK compatibility
 #include "config.h"
@@ -40,6 +41,19 @@ typedef struct {
   float pos[3];
   float dir[3];
   float speed;
+  
+  // might want to use different names, I think this is inspired by this concept
+  // copied from the "Dynamic" struct from our earlier example, but pan means something else
+  // 
+  // https://en.wikipedia.org/wiki/Aircraft_principal_axes
+  // 
+  // also from the N64 library docs:
+  // 
+  // /* Return rotation matrix given roll, pitch, and yaw in degrees */
+  // void guRotateRPYF(float mf[4][4], float r, float p, float h)
+
+  float pan;
+  float yaw;
 } Entity;
 
 
@@ -233,6 +247,8 @@ void stage00_update(void)
     float nick_speed = 0;
     */
 
+    nick.pan = contdata->stick_y;
+
     nick.pos[1] += contdata->stick_y / 20;
     nick.pos[0] += contdata->stick_x / 20;
     /*
@@ -410,8 +426,12 @@ void stage00_draw(void)
     //guTranslate(&nick_pos_mtx, nick_pos[0], nick_pos[1], nick_pos[2]);
 
     guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
-    //guRotateRPYF(&nick.pos_mtx, camang[2], camang[0], camang[1]);
+    guRotateRPYF(&nick.rotx, camang[2], camang[0], camang[1]);
+    //guRotate(&nick.rotx, nick.pan, 1, 0, 0);
+    guRotate(&nick.roty, nick.yaw, 1, 0, 0);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
 
     // Draw catherine
     sausage64_drawmodel(&glistp, &catherine);
@@ -435,6 +455,7 @@ void stage00_draw(void)
     // Draw the menu (doesn't work on PAL)
     #if TV_TYPE != PAL
         nuDebConClear(NU_DEB_CON_WINDOW0);
+        draw_debug_data();
         if (menuopen)
             draw_menu();
         nuDebConDisp(NU_SC_SWAPBUFFER);
@@ -446,6 +467,17 @@ void stage00_draw(void)
     draw_menu
     Draws the menu
 ==============================*/
+
+
+void draw_debug_data()
+{
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 3);
+    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Do a Barrel Roll");
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 4);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_x: %d", contdata->stick_x);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 5);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_y: %d", contdata->stick_y);
+}
 
 void draw_menu()
 {
