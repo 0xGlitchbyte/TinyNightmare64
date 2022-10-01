@@ -57,7 +57,7 @@ static float camang[3] = {0, 0, -90};
 // nick
 Mtx nickMtx[MESHCOUNT_nick];
 
-s64ModelHelper nick = {
+Entity nick = {
     pos: { 20, 1, 0},
     dir: { -1, 0, 0},
 };
@@ -79,9 +79,9 @@ static char usb_buffer[USB_BUFFER_SIZE];
 void stage00_init(void)
 {
     // Initialize nick
-    sausage64_initmodel(&nick, MODEL_nick, nickMtx);
-    sausage64_set_anim(&nick, ANIMATION_nick_idle); 
-    sausage64_set_animcallback(&nick, nick_animcallback);
+    sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
+    sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
+    sausage64_set_animcallback(&nick.helper, nick_animcallback);
     
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL
@@ -105,7 +105,7 @@ void stage00_update(void)
     debug_pollcommands();  
     
     // Advance nick's animation
-    sausage64_advance_anim(&nick, nick_animspeed);
+    sausage64_advance_anim(&nick.helper, nick_animspeed);
     
     
     /* -------- Controller -------- */
@@ -138,12 +138,12 @@ void stage00_update(void)
 	if (fabs(contdata->stick_x) < 7){contdata->stick_x = 0;}
 	if (fabs(contdata->stick_y) < 7){contdata->stick_y = 0;}
 	
-    if ((contdata->stick_x != 0 || contdata->stick_y != 0) && sausage64_get_currentanim(&nick) != ANIMATION_nick_run){
-    	sausage64_set_anim(&nick, ANIMATION_nick_run); 
+    if ((contdata->stick_x != 0 || contdata->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
     }
     
-    if ((contdata->stick_x == 0 && contdata->stick_y == 0) && sausage64_get_currentanim(&nick) != ANIMATION_nick_idle) {
-    	sausage64_set_anim(&nick, ANIMATION_nick_idle);
+    if ((contdata->stick_x == 0 && contdata->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle) {
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
 
 	 if ( contdata->stick_x != 0 || contdata->stick_y != 0) {
@@ -252,7 +252,7 @@ void stage00_draw(void)
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
 
     // Draw nick
-    sausage64_drawmodel(&glistp, &nick);
+    sausage64_drawmodel(&glistp, &nick.helper);
     
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
@@ -310,7 +310,7 @@ void nick_animcallback(u16 anim)
     switch(anim)
     {
         case ANIMATION_nick_run:
-            sausage64_set_anim(&nick, ANIMATION_nick_idle);
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
             break;
     }
 }
@@ -362,7 +362,7 @@ char* command_setanim()
     {
         if (!strcmp(MODEL_nick->anims[i].name, usb_buffer))
         {
-            sausage64_set_anim(&nick, i);
+            sausage64_set_anim(&nick.helper, i);
             return "Animation set.";
         }
     }
@@ -403,7 +403,7 @@ char* command_freezelight()
 
 char* command_togglelerp()
 {
-    nick.interpolate = !nick.interpolate;
+    nick.helper.interpolate = !nick.helper.interpolate;
     return "Interpolation Toggled";
 }
 
@@ -415,7 +415,7 @@ char* command_togglelerp()
 
 char* command_toggleloop()
 {
-    nick.loop = !nick.loop;
+    nick.helper.loop = !nick.helper.loop;
     return "Loop Toggled";
 }
 
