@@ -1,13 +1,16 @@
 # TinyNightmare64
 
+#
+
 ## About
 An attempt at making an N64 game for the N64brew Spooky Game Jam 2022.
 
+#
 
 ## Tools used
 - modern-n64sdk
 - nusys
-
+- Buu342's 
 ## Setting up your enviornment for N64 development
 
 1. Download and install [VSCode](https://code.visualstudio.com/Download).
@@ -17,3 +20,28 @@ An attempt at making an N64 game for the N64brew Spooky Game Jam 2022.
 5. `crtl+shift+p` or `cmd+shift+p` to open up a VSCode command prompt. Type in `Remote-Containers: Clone Repository in Container Volume`. Allow it to reach out to Github.
 6. Type in `mrglitchbyte/TinyNightmare64` for repo.
 7. Choose the branch you want to pull. **NOTE**: It takes a while to clone. Get a cup of coffee or take a 5 minute break.
+
+
+## Setting up your enviornment on ubuntu
+
+1. Install Build Essential, run from the terminal:
+ 
+ 	sudo apt-get update
+	sudo apt-get install build-essential
+	
+2. Install [Crashoverride's Modern SDK](https://crashoveride95.github.io/n64hbrew/modernsdk/index.html)
+	
+	Add a definition of N64_LIBGCCDIR and PATH to the end of my ~/.bashrc script
+	
+		export N64_LIBGCCDIR="/opt/crashsdk/lib/gcc/mips64-elf/11.2.0"
+		PATH=$PATH:/opt/crashsdk/bin; export PATH
+		
+	Add the SDK to APT, run from the terminal:
+	
+		echo "deb [trusted=yes] https://crashoveride95.github.io/apt/ ./" | sudo tee /etc/apt/sources.list.d/n64sdk.list
+		
+	Install the SDK packages, run from the terminal:
+	
+		
+	
+	

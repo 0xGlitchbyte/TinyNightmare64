@@ -9,11 +9,13 @@
 #include <nusys.h>
 #include <string.h> // Needed for CrashSDK compatibility
 #include "config.h"
+#include "structs.h"
 #include "helper.h"
 #include "sausage64.h"
-#include "axisMdl.h"
+#include "texcube.h"
 #include "palette.h"
 #include "nick.h"
+#include "axisMdl.h"
 #include "debug.h"
 
 
@@ -28,41 +30,34 @@
 *********************************/
 
 void draw_debug_data();
-void nick_predraw(u16 part);
 void nick_animcallback(u16 anim);
 
-void matrix_inverse(float mat[4][4], float dest[4][4]);
+void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
+void set_lights(Camera *camera);
+void set_cam(Camera *camera, Entity *entity);
+void draw_entity(Entity *entity, Camera *camera);
 
 
 /*********************************
              Globals
 *********************************/
 
-// Matricies and vectors
-static Mtx projection, viewing, modeling;
-static u16 normal;
-// Lights
-static Light light_amb;
-static Light light_dir;
-
-// Menu
-static char menuopen = FALSE;
-static s8   curx = 0;
-static s8   cury = 0;
 
 // Camera
-static float campos[3] = {0, -100, -600};
-static float camang[3] = {0, 0, -90};
-
-// nick
-Mtx nickMtx[MESHCOUNT_nick];
-
-Entity nick = {
-    pos: { 20, 1, 0},
-    dir: { -1, 0, 0},
+Camera cam = {
+    pos: {0, -800, 500},
+    camang: {0, 0, -90},
 };
 
+
+// Entities
+Entity nick = {
+    pos: { 20, 1, 0},
+};
+
+Mtx nickMtx[MESHCOUNT_nick];
 float nick_animspeed;
+
 
 // USB
 static char uselight = TRUE;
@@ -93,136 +88,117 @@ void stage00_init(void)
 
 
 /*==============================
-    stage00_update
-    Update stage variables every frame
+    move_entity
+    Moves entity with controller
 ==============================*/
 
-void stage00_update(void)
-{
-    int i;
-    
-    // Poll for USB commands
-    debug_pollcommands();  
-    
-    // Advance nick's animation
-    sausage64_advance_anim(&nick.helper, nick_animspeed);
-    
-    
-    /* -------- Controller -------- */
-    /* Nintendo's official button names */
-    /*
-    U_JPAD
-    L_JPAD
-    R_JPAD
-    D_JPAD
-    START_BUTTON
-    A_BUTTON
-    B_BUTTON
-    U_CBUTTONS
-    L_CBUTTONS
-    R_CBUTTONS
-    D_CBUTTONS
-    L_TRIG
-    R_TRIG
-    Z_TRIG
-    */
-    
-    // Read the controller
-    nuContDataGetEx(contdata, 0);
-    
+void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
+
     // START is pressed
-    if (contdata[0].trigger & START_BUTTON)
-    {
+    if (cont[0].trigger & B_BUTTON){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
 	
-	if (fabs(contdata->stick_x) < 7){contdata->stick_x = 0;}
-	if (fabs(contdata->stick_y) < 7){contdata->stick_y = 0;}
+	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 	
-    if ((contdata->stick_x != 0 || contdata->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run){
+    if ((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run ){
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
     }
     
-    if ((contdata->stick_x == 0 && contdata->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle) {
+    if ((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
 
-	 if ( contdata->stick_x != 0 || contdata->stick_y != 0) {
+	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	nick.yaw = atan2(contdata->stick_x, -contdata->stick_y) * (180 / M_PI); 
     }
     
-    nick.pos[1] += contdata->stick_y / 20;
-    nick.pos[0] += contdata->stick_x / 20;
+    entity->pos[1] += contdata->stick_y / 20;
+    entity->pos[0] += contdata->stick_x / 20;
     
-    campos[2] += contdata->stick_y / 20;
-    campos[0] -= contdata->stick_x / 20;
-        
+    camera->pos[1] += contdata->stick_y / 20;
+    camera->pos[0] += contdata->stick_x / 20;
 }
 
 
 /*==============================
-    stage00_draw
-    Draw the stage
+    set_lights
+    Sets the lights 
 ==============================*/
 
-void stage00_draw(void)
-{
-    int i, ambcol = 100;
-    float fmat1[4][4], fmat2[4][4], w;
-    
-    // Assign our glist pointer to our glist array for ease of access
-    glistp = glist;
+void set_lights(Camera *camera){
 
-    // Initialize the RCP and framebuffer
-    rcp_init();
-    fb_clear(128, 128, 32);
-    
-    // Setup the projection matrix
-    guPerspective(&projection, &normal, 45, (float)SCREEN_WD / (float)SCREEN_HT, 10.0, 1000.0, 0.01);
-    
-    // Rotate and position the view
-    guMtxIdentF(fmat1);
-    guRotateRPYF(fmat2, camang[2], camang[0], camang[1]);
-    guMtxCatF(fmat1, fmat2, fmat1);
-    guTranslateF(fmat2, campos[0], campos[1], campos[2]);
-    guMtxCatF(fmat1, fmat2, fmat1);
-    guMtxF2L(fmat1, &viewing);
-    
-    // Apply the projection matrix
-    gSPMatrix(glistp++, &projection, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, &viewing, G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPPerspNormalize(glistp++, &normal);
-    
-    // Setup the Sausage64 camera for billboarding
-    sausage64_set_camera(&viewing, &projection);
+    static Light light_amb;
+    static Light light_dir;
+    int i, ambcol = 100;
+
+        // Apply the cam.projection matrix
+    gSPMatrix(glistp++, &camera->projection, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, &camera->viewpoint, G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPPerspNormalize(glistp++, &camera->normal);
     
     // Setup the lights
     if (!uselight)
         ambcol = 255;
-    for (i=0; i<3; i++)
-    {
+    for (i=0; i<3; i++){
         light_amb.l.col[i] = ambcol;
         light_amb.l.colc[i] = ambcol;
         light_dir.l.col[i] = 255;
         light_dir.l.colc[i] = 255;
     }
-    
     // Calculate the light direction so it's always projecting from the camera's position
-    if (!freezelight)
-    {
-        light_dir.l.dir[0] = -127*sinf(camang[0]*0.0174532925);
-        light_dir.l.dir[1] = 127*sinf(camang[2]*0.0174532925)*cosf(camang[0]*0.0174532925);
-        light_dir.l.dir[2] = 127*cosf(camang[2]*0.0174532925)*cosf(camang[0]*0.0174532925);
+    if (!freezelight){
+        light_dir.l.dir[0] = -127*sinf(camera->camang[0]*0.0174532925);
+        light_dir.l.dir[1] = 127*sinf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
+        light_dir.l.dir[2] = 127*cosf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
     }
-    
     // Send the light struct to the RSP
     gSPNumLights(glistp++, NUMLIGHTS_1);
     gSPLight(glistp++, &light_dir, 1);
     gSPLight(glistp++, &light_amb, 2);
     gDPPipeSync(glistp++);
+}
+
+/*==============================
+    set_cam
+    Sets the camera 
+==============================*/
+
+void set_cam(Camera *camera, Entity *entity){
+
+       int i, ambcol = 100;
+
+    // Setup the cam.projection matrix
+    guPerspective(
+    	&camera->projection, &camera->normal, 
+        45, (float)SCREEN_WD / (float)SCREEN_HT, 
+    	10.0, 10000.0, 0.01);
     
+    guLookAt(
+    	&camera->viewpoint,
+    	camera->pos[0], camera->pos[1], camera->pos[2],
+    	entity->pos[0], entity->pos[1], entity->pos[2],
+    	0, 0, 1
+  	);
+
+    set_lights(camera);
+}
+
+
+/*==============================
+    draw_entity
+    Draws entities 
+==============================*/
+
+void draw_entity(Entity *entity, Camera *camera){
+
+    set_cam(camera, entity);
+
     // Initialize the model matrix
-    guMtxIdent(&modeling);
-    gSPMatrix(glistp++, &modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    guMtxIdent(&entity->modeling);
+    gSPMatrix(glistp++, &entity->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    
 
     // Initialize the RCP to draw stuff nicely
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
@@ -239,17 +215,16 @@ void stage00_draw(void)
     gDPSetTextureDetail(glistp++, G_TD_CLAMP);
     gDPSetTextureLUT(glistp++, G_TT_NONE);
     
-    // Draw an axis on the floor for directional reference
-    if (drawaxis)
-        gSPDisplayList(glistp++, gfx_axis);
+    gSPDisplayList(glistp++, gfx_axis);
 
-    guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
-    guRotate(&nick.rotx, nick.pitch, 1, 0, 0);
-    guRotate(&nick.roty, nick.yaw, 0, 0, 1);
+    guTranslate(&(entity->pos_mtx), entity->pos[0], entity->pos[1], entity->pos[2]);
+    guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
+    guRotate(&entity->roty, entity->yaw, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
 
     // Draw nick
     sausage64_drawmodel(&glistp, &nick.helper);
@@ -257,11 +232,49 @@ void stage00_draw(void)
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
+
+    // Ensure the cache lines are valid
+    osWritebackDCache(&cam.projection, sizeof(cam.projection));
+    osWritebackDCache(&nick.modeling, sizeof(nick.modeling));
+}
+
+
+/*==============================
+    stage00_update
+    Update stage variables every frame
+==============================*/
+
+void stage00_update(void){
     
-    // Ensure the chache lines are valid
-    osWritebackDCache(&projection, sizeof(projection));
-    osWritebackDCache(&modeling, sizeof(modeling));
+    // Poll for USB commands
+    debug_pollcommands();  
     
+    // Advance nick's animation
+    sausage64_advance_anim(&nick.helper, nick_animspeed);
+
+    // Read the controller
+    nuContDataGetEx(contdata, 0);
+    
+    move_entity(&nick, &cam, contdata);     
+}
+
+
+/*==============================
+    stage00_draw
+    Draw the stage
+==============================*/
+
+void stage00_draw(void){
+    
+    // Assign our glist pointer to our glist array for ease of access
+    glistp = glist;
+
+    // Initialize the RCP and framebuffer
+    rcp_init();
+    fb_clear(128, 128, 32);
+
+    draw_entity(&nick, &cam);    
+
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
     #if TV_TYPE != PAL
@@ -309,15 +322,11 @@ void nick_animcallback(u16 anim)
     // Go to idle animation when we finished attacking
     switch(anim)
     {
-        case ANIMATION_nick_run:
+        case ANIMATION_nick_roll:
             sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
             break;
     }
 }
-
-
-
-
 
 /*********************************
       USB Command Functions
