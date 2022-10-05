@@ -193,6 +193,8 @@ void set_cam(Camera *camera, Entity *entity){
 
 void draw_entity(Entity *entity, Camera *camera){
 
+ 
+    Mtx mesh_pos[3], mesh_rotx[3], mesh_roty[3]; 
     set_cam(camera, entity);
 
     // Initialize the model matrix
@@ -214,6 +216,14 @@ void draw_entity(Entity *entity, Camera *camera){
     gDPSetTextureLOD(glistp++, G_TL_TILE);
     gDPSetTextureDetail(glistp++, G_TD_CLAMP);
     gDPSetTextureLUT(glistp++, G_TT_NONE);
+
+    guTranslate(mesh_pos, 100, 100, 10);
+    guRotate(mesh_rotx, 0, 1, 0, 0);
+    guRotate(mesh_roty, 0, 0, 0, 1);
+
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(mesh_pos)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(mesh_rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(mesh_roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
     
     gSPDisplayList(glistp++, gfx_axis);
 

@@ -8,7 +8,6 @@
 
 typedef struct {
 	
-	Mtx modeling;
 	Mtx	pos_mtx;
 	Mtx	rotx;
 	Mtx roty;
@@ -20,6 +19,7 @@ typedef struct {
 	float yaw;
 	float size[3];
 	float speed;
+	Mtx modeling;
 	s64ModelHelper helper;
 } Entity;
 
