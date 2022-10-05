@@ -35,7 +35,8 @@ void nick_animcallback(u16 anim);
 void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
 void set_lights(Camera *camera);
 void set_cam(Camera *camera, Entity *entity);
-void draw_entity(Entity *entity, Camera *camera);
+void draw_world(Entity *entity, Camera *camera);
+void draw_entity(Entity *entity);
 
 
 /*********************************
@@ -186,20 +187,34 @@ void set_cam(Camera *camera, Entity *entity){
 }
 
 
+void draw_entity(Entity *entity) {
+    guTranslate(&(entity->pos_mtx), entity->pos[0], entity->pos[1], entity->pos[2]);
+    guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
+    guRotate(&entity->roty, entity->yaw, 0, 0, 1);
+
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
+
+    // Draw nick
+    sausage64_drawmodel(&glistp, &nick.helper);
+}
+
 /*==============================
-    draw_entity
+    draw_world
     Draws entities 
 ==============================*/
 
-void draw_entity(Entity *entity, Camera *camera){
+void draw_world(Entity *entity, Camera *camera){
 
  
     Mtx mesh_pos[3], mesh_rotx[3], mesh_roty[3]; 
     set_cam(camera, entity);
 
     // Initialize the model matrix
-    guMtxIdent(&entity->modeling);
-    gSPMatrix(glistp++, &entity->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    guMtxIdent(&camera->modeling);
+    gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     
 
     // Initialize the RCP to draw stuff nicely
@@ -227,25 +242,15 @@ void draw_entity(Entity *entity, Camera *camera){
     
     gSPDisplayList(glistp++, gfx_axis);
 
-    guTranslate(&(entity->pos_mtx), entity->pos[0], entity->pos[1], entity->pos[2]);
-    guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
-    guRotate(&entity->roty, entity->yaw, 0, 0, 1);
-
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(entity->roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-
-
-    // Draw nick
-    sausage64_drawmodel(&glistp, &nick.helper);
-    
+    draw_entity(entity);
+ 
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
 
     // Ensure the cache lines are valid
-    osWritebackDCache(&cam.projection, sizeof(cam.projection));
-    osWritebackDCache(&nick.modeling, sizeof(nick.modeling));
+    osWritebackDCache(&camera->projection, sizeof(&camera->projection));
+    osWritebackDCache(&camera->modeling, sizeof(camera->modeling));
 }
 
 
@@ -283,7 +288,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(128, 128, 32);
 
-    draw_entity(&nick, &cam);    
+    draw_world(&nick, &cam);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);

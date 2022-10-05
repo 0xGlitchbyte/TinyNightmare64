@@ -19,11 +19,11 @@ typedef struct {
 	float yaw;
 	float size[3];
 	float speed;
-	Mtx modeling;
 	s64ModelHelper helper;
 } Entity;
 
 typedef struct {    
+	Mtx modeling;
 	Mtx projection;
 	Mtx viewpoint;
 	Mtx camRot;
