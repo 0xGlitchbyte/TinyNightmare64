@@ -19,8 +19,17 @@ typedef struct {
 	float yaw;
 	float size[3];
 	float speed;
-	s64ModelHelper helper;
 } Entity;
+
+typedef struct {
+	Entity entity;
+	s64ModelHelper helper;
+} AnimatedEntity;
+
+typedef struct {
+	Entity entity;
+	Gfx *mesh;
+} StaticEntity;
 
 typedef struct {    
 	Mtx modeling;

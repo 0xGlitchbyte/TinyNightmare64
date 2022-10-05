@@ -36,7 +36,7 @@ void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
 void set_lights(Camera *camera);
 void set_cam(Camera *camera, Entity *entity);
 void draw_world(Entity *entity, Camera *camera);
-void draw_entity(Entity *entity);
+void draw_animated_entity(AnimatedEntity *entity);
 
 
 /*********************************
@@ -52,8 +52,16 @@ Camera cam = {
 
 
 // Entities
-Entity nick = {
-    pos: { 20, 1, 0},
+AnimatedEntity nick = {
+    entity: {
+        pos: { 20, 1, 0},
+    }
+};
+
+StaticEntity axis = {
+    entity: {
+        pos: { 100, 100, 10 },
+    }
 };
 
 Mtx nickMtx[MESHCOUNT_nick];
@@ -112,7 +120,7 @@ void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
     }
 
 	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	nick.yaw = atan2(contdata->stick_x, -contdata->stick_y) * (180 / M_PI); 
+    	nick.entity.yaw = atan2(contdata->stick_x, -contdata->stick_y) * (180 / M_PI); 
     }
     
     entity->pos[1] += contdata->stick_y / 20;
@@ -187,7 +195,8 @@ void set_cam(Camera *camera, Entity *entity){
 }
 
 
-void draw_entity(Entity *entity) {
+void draw_animated_entity(AnimatedEntity *animated_entity) {
+    Entity *entity = &animated_entity->entity;
     guTranslate(&(entity->pos_mtx), entity->pos[0], entity->pos[1], entity->pos[2]);
     guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
     guRotate(&entity->roty, entity->yaw, 0, 0, 1);
@@ -206,11 +215,11 @@ void draw_entity(Entity *entity) {
     Draws entities 
 ==============================*/
 
-void draw_world(Entity *entity, Camera *camera){
+void draw_world(Entity *highlighted_entity, Camera *camera){
 
  
     Mtx mesh_pos[3], mesh_rotx[3], mesh_roty[3]; 
-    set_cam(camera, entity);
+    set_cam(camera, highlighted_entity);
 
     // Initialize the model matrix
     guMtxIdent(&camera->modeling);
@@ -242,7 +251,7 @@ void draw_world(Entity *entity, Camera *camera){
     
     gSPDisplayList(glistp++, gfx_axis);
 
-    draw_entity(entity);
+    draw_animated_entity(highlighted_entity);
  
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
@@ -270,7 +279,7 @@ void stage00_update(void){
     // Read the controller
     nuContDataGetEx(contdata, 0);
     
-    move_entity(&nick, &cam, contdata);     
+    move_entity(&nick.entity, &cam, contdata);     
 }
 
 
@@ -288,7 +297,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(128, 128, 32);
 
-    draw_world(&nick, &cam);    
+    draw_world(&nick.entity, &cam);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
