@@ -26,8 +26,8 @@ An attempt at making an N64 game for the N64brew Spooky Game Jam 2022.
 
 1. Install Build Essential, run from the terminal:
 
- 	sudo apt-get update
-	sudo apt-get install build-essential
+		sudo apt-get update
+		sudo apt-get install build-essential
 	
 2. Install [Crashoveride's Modern SDK](https://crashoveride95.github.io/n64hbrew/modernsdk/index.html)
 	
