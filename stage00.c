@@ -309,6 +309,9 @@ void stage00_update(void){
     // Advance nick's animation
     sausage64_advance_anim(&nick.helper, nick.animspeed);
 
+    // Advacnce Willy's animation
+    sausage64_advance_anim(&willy.helper, willy.animspeed);
+
     // Read the controller
     nuContDataGetEx(contdata, 0);
     
