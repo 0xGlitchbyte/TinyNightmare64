@@ -29,7 +29,7 @@ An attempt at making an N64 game for the N64brew Spooky Game Jam 2022.
  	sudo apt-get update
 	sudo apt-get install build-essential
 	
-2. Install [Crashoverride's Modern SDK](https://crashoveride95.github.io/n64hbrew/modernsdk/index.html)
+2. Install [Crashoveride's Modern SDK](https://crashoveride95.github.io/n64hbrew/modernsdk/index.html)
 	
 	Add a definition of N64_LIBGCCDIR and PATH to the end of my ~/.bashrc script
 		export N64_LIBGCCDIR="/opt/crashsdk/lib/gcc/mips64-elf/11.2.0"
