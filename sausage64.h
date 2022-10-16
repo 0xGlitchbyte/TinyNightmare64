@@ -88,11 +88,21 @@
     
     
     /*==============================
+    sausage64_get_currentanim
+    Returns the index of the current animation.
+    @param The model helper pointer
+    @param The ANIMATION_* macro to set
+==============================*/
+
+	u32 sausage64_get_currentanim(s64ModelHelper* mdl);
+    
+    /*==============================
         sausage64_set_animcallback
         Set a function that gets called when an animation finishes
         @param The model helper pointer
         @param The animation end callback function
     ==============================*/
+    
     
     extern void sausage64_set_animcallback(s64ModelHelper* mdl, void (*animcallback)(u16));
     

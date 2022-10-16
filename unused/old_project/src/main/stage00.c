@@ -98,38 +98,15 @@ void initStage00()
 void SetViewMtx(Dynamic *dp)
 {
   u16 perspNorm;
-
-  /* The calculation and set-up of the projection-matrix  */
   guPerspective(
-    &dp->projection,                     // Mtx *m
-    &perspNorm,                          // u16 *perspNorm,
-    50,                                  // FOV
-    (float)SCREEN_WD / (float)SCREEN_HT, // ASPECT
-    10,                                  // near plane clicaming
-    10000,                               // far plane clicaming
-    1.0F                                 // matrix object scaling
-  );
+    &dp->projection, &perspNorm,
+    50, (float)SCREEN_WD / (float)SCREEN_HT,
+    10, 10000, 1.0F
+    );
   
-//  debug_printf("%f %f %f\n%f %f %f\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.forward.x, cam.forward.y, cam.forward.z);
-
-/*  guLookAt(&dp->viewing,
-    cam.pos.x,
-    cam.pos.y,
-    cam.pos.z,
-    cam.pos.x + cam.forward.x,
-    cam.pos.y + cam.forward.y,
-    cam.pos.z + cam.forward.z,
-    0, 1, 0
-  );
-*/
-
   guLookAt(&dp->viewing,
-    100,
-    100,
-    100,
-    0,
-    0,
-    0,
+    100, 100, 100,
+    0, 0, 0,
     0, 1, 0
   );
 
@@ -144,7 +121,6 @@ void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset)
   int i = 0;
 
   /* Create matrices for mult */
-  /* CUBE IS AT CENTER OF EARTH */
   guTranslate(&dynamicp->pos, 0 + x_offset, 0 + x_offset, 0);
   guRotate(&dynamicp->rotx, cubepan, 1, 0, 0);
   guRotate(&dynamicp->roty, cubeyaw, 0, 1, 0);
@@ -169,13 +145,16 @@ void draw_mesh(Dynamic *dynamicp, Gfx *model, float scale, float x_offset)
   ====================================================
   ====================================================*/
   gSPDisplayList(glistp++, model);
-  /*=================================================
-  ====================================================*/
 
   /* Finalise and exit drawing */
   gSPTexture(glistp++, 0, 0, 0, 0, G_OFF);
   gDPPipeSync(glistp++);
 }
+
+
+
+
+
 
 void makeDL00(void)
 {
@@ -188,13 +167,12 @@ void makeDL00(void)
   /* Clear the frame buffer and the Z-buffer  */
   gfxClearCfb();
 
-  SetViewMtx(&gfx_dynamic);
-
-  // guRotate(&gfx_dynamic.modeling, 0.0F, 0.0F, 0.0F, 0.0F);
-
-  /* Draw models  */
-    
+  SetViewMtx(&gfx_dynamic); 
+  
   draw_mesh(&gfx_dynamic, gfx_cube, 1, 30);
+  
+  SetViewMtx(&gfx_dynamic_cube2); 
+  
   draw_mesh(&gfx_dynamic_cube2, gfx_cube, 2, -20);
 
   /* End the construction of the display list  */
@@ -237,10 +215,10 @@ void updateGame00()
 
   /*if(contdata[0].button & START_BUTTON){}*/
   if(contdata[0].button & A_BUTTON){
-    cubescale += 0.001;
+    cubescale += 0.1;
   }
   if(contdata[0].button & B_BUTTON){
-    cubescale -= 0.001;
+    cubescale -= 0.1;
   }
   set_angle(-move.xview / 100000.0, move.yview / 100000.0);
   move_to(move.side * 5.0, move.forward * 5.0, move.up * 5.0);

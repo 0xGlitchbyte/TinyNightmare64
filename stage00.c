@@ -1,20 +1,22 @@
 /***************************************************************
                            stage00.c
-                               
-Handles the first level of the game.
+                
+  first acomplished attempt to render and move nick around
+             and make camera follow him!
 ***************************************************************/
 
 #include <math.h>
 #include <nusys.h>
 #include <string.h> // Needed for CrashSDK compatibility
 #include "config.h"
+#include "structs.h"
 #include "helper.h"
 #include "sausage64.h"
-#include "axisMdl.h"
-#include "catherineTex.h"
-#include "catherineMdl.h"
+#include "texcube.h"
 #include "palette.h"
 #include "nick.h"
+#include "willy.h"
+#include "axisMdl.h"
 #include "debug.h"
 
 
@@ -23,96 +25,64 @@ Handles the first level of the game.
 *********************************/
 
 #define USB_BUFFER_SIZE 256
+#define FRAMETIME_COUNT 30
 
-
-typedef struct {
-  //Camera params
-  Mtx   projection;
-  Mtx   modeling;
-  Mtx   viewing;
-  Mtx   camRot;
-
-  //Cube-specific params
-  Mtx	rotx;
-  Mtx   roty;
-
-  Mtx	  pos_mtx;
-  Mtx 	scale;
-  float pos[3];
-  float dir[3];
-  float speed;
-  
-  // I changed the name "pan" to "pitch", this struct is inspired by the
-  // "Dynamic" struct from our earlier example, but the word "pan"
-  // means something else in cameras/graphics
-  // 
-  // https://en.wikipedia.org/wiki/Aircraft_principal_axes
-  // 
-  // also from the N64 library docs:
-  // 
-  // /* Return rotation matrix given roll, pitch, and yaw in degrees */
-  // void guRotateRPYF(float mf[4][4], float r, float p, float h)
-
-  float pitch;
-  float yaw;
-} Entity;
-
-
-Entity nick = 
-{ //Camera params
-      //Mtx   projection;
-      //Mtx   modeling;
-      //Mtx   viewing;
-      //Mtx   camRot;
-
-      //Cube-specific params
-      pos: { 20, 1, 0},
-      dir: { -1, 0, 0},
-      speed: 0
-};
 
 /*********************************
         Function Prototypes
 *********************************/
 
+f32 calculate_fps();
 void draw_debug_data();
-void draw_menu();
-void catherine_predraw(u16 part);
-void catherine_animcallback(u16 anim);
-
-void matrix_inverse(float mat[4][4], float dest[4][4]);
+void nick_animcallback(u16 anim);
+void willy_animcallback(u16 anim);
+void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
+void set_lights(Camera *camera);
+void set_cam(Camera *camera, Entity *entity);
+void draw_world(AnimatedEntity *entity, Camera *camera);
+void draw_animated_entity(AnimatedEntity *entity);
+void draw_static_entity(StaticEntity *static_entity);
 
 
 /*********************************
              Globals
 *********************************/
 
-// Matricies and vectors
-static Mtx projection, viewing, modeling;
-static u16 normal;
-// Lights
-static Light light_amb;
-static Light light_dir;
-
-// Menu
-static char menuopen = FALSE;
-static s8   curx = 0;
-static s8   cury = 0;
+//Variables
+OSTime frameTimes[FRAMETIME_COUNT];
+u8 curFrameTimeIndex = 0;
+f32 gFPS = 0;
 
 // Camera
-static float campos[3] = {0, -100, -300};
-static float camang[3] = {0, 0, -90};
+Camera cam = {
+    pos: {0, -800, 500},
+    camang: {0, 0, -90},
+};
 
-// Catherine
-Mtx catherineMtx[MESHCOUNT_MyModel];
-s64ModelHelper catherine;
-float catherine_animspeed;
 
-// Face animation
-static u16 faceindex;
-static u32 facetick;
-static OSTime facetime;
-static FaceAnim* faceanim;
+// Entities
+AnimatedEntity nick = {
+    entity: {
+        pos: { -100, -100, 0},
+    }
+};
+
+Mtx nickMtx[MESHCOUNT_nick];
+
+AnimatedEntity willy = {
+    entity: {
+        pos: { 200, 200, 0},
+    }
+};
+
+Mtx willyMtx[MESHCOUNT_willy];
+
+StaticEntity axis = {
+    entity: {
+        pos: { 0, 0, 0},
+    }
+};
+
 
 // USB
 static char uselight = TRUE;
@@ -128,235 +98,75 @@ static char usb_buffer[USB_BUFFER_SIZE];
 
 void stage00_init(void)
 {
-    // Initialize Catherine
-    sausage64_initmodel(&catherine, MODEL_MyModel, catherineMtx);
-    sausage64_set_anim(&catherine, ANIMATION_MyModel_run); 
-    sausage64_set_predrawfunc(&catherine, catherine_predraw);
-    sausage64_set_animcallback(&catherine, catherine_animcallback);
+    // Initialize entities
+    sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
+    sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
+    sausage64_set_animcallback(&nick.helper, nick_animcallback);
+
+    sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
+    sausage64_set_anim(&willy.helper, ANIMATION_willy_idle); 
+    sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
-    // Set catherine's animation speed based on region
+    // Set nick's animation speed based on region
     #if TV_TYPE == PAL
-        catherine_animspeed = 0.66;
+        nick.animspeed = 0.66;
+        willy.animspeed = 0.66;
     #else
-        catherine_animspeed = 0.5;
+        nick.animspeed = 0.5;
+        willy.animspeed = 0.5;
     #endif
-    
-    
-    // Initialize the face animation
-    facetick = 60;
-    faceindex = 0;
-    facetime = osGetTime() + OS_USEC_TO_CYCLES(22222);
-    faceanim = &catherine_faces[0];
 }
 
 
 /*==============================
-    stage00_update
-    Update stage variables every frame
+    move_entity
+    Moves entity with controller
 ==============================*/
 
-void stage00_update(void)
-{
-    int i;
-    
-    // Poll for USB commands
-    debug_pollcommands();  
-    
-    // Advance Catherine's animation
-    sausage64_advance_anim(&catherine, catherine_animspeed);
-    
-    
-    /* -------- Face Animation -------- */
-    
-    // If the frame time has elapsed
-    if (facetime < osGetTime())
-    {
-        // Advance the face animation tick
-        facetick--;
-        facetime = osGetTime() + OS_USEC_TO_CYCLES(22222);
-        
-        // Face animation blinking
-        if (faceanim->hasblink)
-        {
-            switch (facetick)
-            {
-                case 3:
-                case 1:
-                    faceindex = 1;
-                    break;
-                case 2:
-                    faceindex = 2;
-                    break;
-                case 0:
-                    faceindex = 0;
-                    facetick = 60 + guRandom()%80;
-                    break;
-            }
-        }
-    }
-    
-    
-    /* -------- Controller -------- */
-    
-    // Read the controller
-    nuContDataGetEx(contdata, 0);
-    
-    // Reset the camera when START is pressed
-    if (contdata[0].trigger & START_BUTTON)
-    {
-        campos[0] = 0;
-        campos[1] = -100;
-        campos[2] = -300;
-        camang[0] = 0;
-        camang[1] = 0;
-        camang[2] = -90;
+void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
+	
+	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
+
+	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
+    	nick.entity.yaw = atan2(contdata->stick_x, -contdata->stick_y) * (180 / M_PI); 
     }
 
-    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
-        //sausage64_set_anim(&catherine, ANIMATION_MyModel_idle);
-    }
-    if ( contdata->stick_y == 0 && contdata->stick_y == 0) {
-
+    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_jumpUP);
     }
 
-    nick.yaw = atan2(contdata->stick_x, -1 * contdata->stick_y) * (180 / M_PI);
-
-    nick.pos[1] += contdata->stick_y / 20;
-    nick.pos[0] += contdata->stick_x / 20;
-
-    campos[2] += contdata->stick_y / 20;
-    campos[0] += contdata->stick_x / 20;
-        
-    /* -------- Menu -------- */
+    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
+    }
+	
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    }
     
-    // If the menu is open
-    if (menuopen)
-    {
-        int menuyscale[4] = {ANIMATIONCOUNT_MyModel, TOTALFACES, 2, 5};
-    
-        // Moving the cursor left/right
-        if (contdata[0].trigger & R_JPAD)
-            curx = (curx+1)%4;
-        if (contdata[0].trigger & L_JPAD)
-        {
-            curx--;
-            if (curx < 0)
-                curx = 3;
-        }
-        
-        // Moving the cursor up/down
-        if (contdata[0].trigger & D_JPAD)
-            cury++;
-        if (contdata[0].trigger & U_JPAD)
-            cury--;
-            
-        // Correct the Y position
-        if (cury < 0)
-            cury = menuyscale[curx]-1;
-        cury %= menuyscale[curx];
-        
-        // Pressing A to do stuff
-        if (contdata[0].trigger & A_BUTTON)
-        {
-            switch (curx)
-            {
-                case 0:
-                    sausage64_set_anim(&catherine, cury);
-                    break;
-                case 1:
-                    facetick = 60;
-                    faceindex = 0;
-                    faceanim = &catherine_faces[cury];
-                    break;
-                case 2:
-                    if (cury == 0)
-                        uselight = !uselight;
-                    else
-                        freezelight = !freezelight;
-                    break;
-                case 3:
-                    if (cury == 0)
-                        catherine.interpolate = !catherine.interpolate;
-                    else if (cury == 1)
-                        catherine.loop = !catherine.loop;
-                    else if (cury == 2)
-                        drawaxis = !drawaxis;
-                    else if (cury == 3)
-                        catherine_animspeed += 0.1;
-                    else if (cury == 4)
-                        catherine_animspeed -= 0.1;
-                    break;
-            }
-        }
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
+    
+    entity->pos[1] += contdata->stick_y / 20;
+    entity->pos[0] += contdata->stick_x / 20;
+    
+    camera->pos[1] += contdata->stick_y / 20;
+    camera->pos[0] += contdata->stick_x / 20;
 }
 
 
 /*==============================
-    stage00_draw
-    Draw the stage
+    set_lights
+    Sets the lights 
 ==============================*/
 
-void stage00_draw(void)
-{
+void set_lights(Camera *camera){
+
+    static Light light_amb;
+    static Light light_dir;
     int i, ambcol = 100;
-    float fmat1[4][4], fmat2[4][4], w;
     
-    // Assign our glist pointer to our glist array for ease of access
-    glistp = glist;
-
-    // Initialize the RCP and framebuffer
-    rcp_init();
-    fb_clear(128, 128, 32);
-    
-    // Setup the projection matrix
-    guPerspective(&projection, &normal, 45, (float)SCREEN_WD / (float)SCREEN_HT, 10.0, 1000.0, 0.01);
-    
-    // Rotate and position the view
-    guMtxIdentF(fmat1);
-    guRotateRPYF(fmat2, camang[2], camang[0], camang[1]);
-    guMtxCatF(fmat1, fmat2, fmat1);
-    guTranslateF(fmat2, campos[0], campos[1], campos[2]);
-    guMtxCatF(fmat1, fmat2, fmat1);
-    guMtxF2L(fmat1, &viewing);
-    
-    // Apply the projection matrix
-    gSPMatrix(glistp++, &projection, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, &viewing, G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPPerspNormalize(glistp++, &normal);
-    
-    // Setup the Sausage64 camera for billboarding
-    sausage64_set_camera(&viewing, &projection);
-    
-    // Setup the lights
-    if (!uselight)
-        ambcol = 255;
-    for (i=0; i<3; i++)
-    {
-        light_amb.l.col[i] = ambcol;
-        light_amb.l.colc[i] = ambcol;
-        light_dir.l.col[i] = 255;
-        light_dir.l.colc[i] = 255;
-    }
-    
-    // Calculate the light direction so it's always projecting from the camera's position
-    if (!freezelight)
-    {
-        light_dir.l.dir[0] = -127*sinf(camang[0]*0.0174532925);
-        light_dir.l.dir[1] = 127*sinf(camang[2]*0.0174532925)*cosf(camang[0]*0.0174532925);
-        light_dir.l.dir[2] = 127*cosf(camang[2]*0.0174532925)*cosf(camang[0]*0.0174532925);
-    }
-    
-    // Send the light struct to the RSP
-    gSPNumLights(glistp++, NUMLIGHTS_1);
-    gSPLight(glistp++, &light_dir, 1);
-    gSPLight(glistp++, &light_amb, 2);
-    gDPPipeSync(glistp++);
-    
-    // Initialize the model matrix
-    guMtxIdent(&modeling);
-    gSPMatrix(glistp++, &modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-
     // Initialize the RCP to draw stuff nicely
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
     gDPSetDepthSource(glistp++, G_ZS_PIXEL);
@@ -372,29 +182,159 @@ void stage00_draw(void)
     gDPSetTextureDetail(glistp++, G_TD_CLAMP);
     gDPSetTextureLUT(glistp++, G_TT_NONE);
     
-    // Draw an axis on the floor for directional reference
-    if (drawaxis)
-        gSPDisplayList(glistp++, gfx_axis);
+    // Setup the lights
+    if (!uselight)
+        ambcol = 255;
+    for (i=0; i<3; i++){
+        light_amb.l.col[i] = ambcol;
+        light_amb.l.colc[i] = ambcol;
+        light_dir.l.col[i] = 255;
+        light_dir.l.colc[i] = 255;
+    }
+    // Calculate the light direction so it's always projecting from the camera's position
+    if (!freezelight){
+        light_dir.l.dir[0] = -127*sinf(camera->camang[0]*0.0174532925);
+        light_dir.l.dir[1] = 127*sinf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
+        light_dir.l.dir[2] = 127*cosf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
+    }
+    // Send the light struct to the RSP
+    gSPNumLights(glistp++, NUMLIGHTS_1);
+    gSPLight(glistp++, &light_dir, 1);
+    gSPLight(glistp++, &light_amb, 2);
+    gDPPipeSync(glistp++);
+}
 
-    guTranslate(&(nick.pos_mtx), nick.pos[0], nick.pos[1], nick.pos[2]);
-    guRotate(&nick.rotx, nick.pitch, 1, 0, 0);
-    guRotate(&nick.roty, nick.yaw, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.pos_mtx)), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.rotx)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&(nick.roty)), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+/*==============================
+    set_cam
+    Sets the camera 
+==============================*/
 
-    // Draw catherine
-    sausage64_drawmodel(&glistp, &catherine);
+void set_cam(Camera *camera, Entity *entity){
+
+       int i, ambcol = 100;
+
+    // Setup the cam.projection matrix
+    guPerspective(
+    	&camera->projection, &camera->normal, 
+        45, (float)SCREEN_WD / (float)SCREEN_HT, 
+    	10.0, 10000.0, 0.01);
     
+    guLookAt(
+    	&camera->viewpoint,
+    	camera->pos[0], camera->pos[1], camera->pos[2],
+    	entity->pos[0], entity->pos[1], entity->pos[2],
+    	0, 0, 1
+  	);
+
+    // Apply the cam.projection matrix
+    gSPMatrix(glistp++, &camera->projection, G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, &camera->viewpoint, G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPPerspNormalize(glistp++, &camera->normal);
+
+    // Initialize the model matrix
+    guMtxIdent(&camera->modeling);
+    gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+    
+    set_lights(camera);
+}
+
+
+void draw_animated_entity(AnimatedEntity *animated_entity){
+
+    Entity *entity = &animated_entity->entity;
+    guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
+    guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
+    guRotate(&entity->roty, entity->yaw, 0, 0, 1);
+
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rotx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->roty), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+
+    sausage64_drawmodel(&glistp, &animated_entity->helper);
+}
+
+
+void draw_static_entity(StaticEntity *static_entity){
+    
+    Entity *entity = &static_entity->entity;
+
+    guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
+    guRotate(&entity->rotx, 0, 1, 0, 0);
+    guRotate(&entity->roty, 0, 0, 0, 1);
+
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rotx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->roty), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    
+    gSPDisplayList(glistp++, gfx_axis);
+}
+
+
+/*==============================
+    draw_world
+    Draws entities 
+==============================*/
+
+void draw_world(AnimatedEntity *highlighted_entity, Camera *camera){
+  
+    set_cam(camera, &highlighted_entity->entity);
+
+    draw_static_entity(&axis);
+
+    draw_animated_entity(&nick);
+
+    draw_animated_entity(&willy);
+ 
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
+
+    // Ensure the cache lines are valid
+    osWritebackDCache(&camera->projection, sizeof(&camera->projection));
+    osWritebackDCache(&camera->modeling, sizeof(camera->modeling));
+}
+
+
+/*==============================
+    stage00_update
+    Update stage variables every frame
+==============================*/
+
+void stage00_update(void){
     
-    // Ensure the chache lines are valid
-    osWritebackDCache(&projection, sizeof(projection));
-    osWritebackDCache(&modeling, sizeof(modeling));
+    // Poll for USB commands
+    debug_pollcommands();  
     
+    // Advance nick's animation
+    sausage64_advance_anim(&nick.helper, nick.animspeed);
+
+    // Read the controller
+    nuContDataGetEx(contdata, 0);
+    
+    move_entity(&nick.entity, &cam, contdata);     
+}
+
+
+/*==============================
+    stage00_draw
+    Draw the stage
+==============================*/
+
+void stage00_draw(void){
+
+    //calculates fps
+    calculate_fps();
+    
+    // Assign our glist pointer to our glist array for ease of access
+    glistp = glist;
+
+    // Initialize the RCP and framebuffer
+    rcp_init();
+    fb_clear(128, 128, 32);
+
+    draw_world(&nick, &cam);    
+
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
     #if TV_TYPE != PAL
@@ -407,130 +347,83 @@ void stage00_draw(void)
     #if TV_TYPE != PAL
         nuDebConClear(NU_DEB_CON_WINDOW0);
         draw_debug_data();
-        if (menuopen)
-            draw_menu();
         nuDebConDisp(NU_SC_SWAPBUFFER);
     #endif
 }
 
 
 /*==============================
-    draw_menu
-    Draws the menu
+    calculate_fps
+    Calculates and updates fps
 ==============================*/
 
+// Call once per frame
+f32 calculate_fps() {
+    OSTime newTime = osGetTime();
+    OSTime oldTime = frameTimes[curFrameTimeIndex];
+    frameTimes[curFrameTimeIndex] = newTime;
+
+    curFrameTimeIndex++;
+    if (curFrameTimeIndex >= FRAMETIME_COUNT) {
+        curFrameTimeIndex = 0;
+    }
+    gFPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(newTime - oldTime);
+    return gFPS;
+}
+
+
+/*==============================
+    draw_debug_data
+    Draws debug data
+==============================*/
 
 void draw_debug_data()
 {
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 3);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Do a Barrel Roll");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 4);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_x: %d", contdata->stick_x);
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 5);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "contdata->stick_y: %d", contdata->stick_y);
+    int FPS = (int)gFPS;
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS = %d", FPS);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "stick x: %d", contdata->stick_x);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "stick y: %d", contdata->stick_y);
 }
 
-void draw_menu()
-{
-    int i, cx;
-    
-    // List the animations
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 3);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Anims");
-    for (i=0; i<ANIMATIONCOUNT_MyModel; i++) // Can also use MODEL_Catherine->animcount (but macro is faster on the CPU)
-    {
-        nuDebConTextPos(NU_DEB_CON_WINDOW0, 4, 5+i);
-        nuDebConCPuts(NU_DEB_CON_WINDOW0, MODEL_Catherine->anims[i].name);
-    }
-    
-    // List the faces
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 15, 3);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Faces");
-    for (i=0; i<TOTALFACES; i++)
-    {
-        nuDebConTextPos(NU_DEB_CON_WINDOW0, 16, 5+i);
-        nuDebConCPuts(NU_DEB_CON_WINDOW0, catherine_faces[i].name);
-    }
-    
-    // List the light options
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 24, 3);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Light");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 25, 5);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Toggle");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 25, 6);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Freeze");
-    
-    // List the other options
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 32, 3);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Other");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 33, 5);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Lerp");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 33, 6);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Loop");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 33, 7);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Axis");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 33, 8);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Faster");
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 33, 9);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "Slower");
-    
-    // Draw a nice little bar separating everything
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 3, 4);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, "-------------------------------------");
-    
-    // Draw the cursor
-    switch(curx)
-    {
-        case 0: cx = 3;  break;
-        case 1: cx = 15; break;
-        case 2: cx = 24; break;
-        case 3: cx = 32; break;
-    }
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, cx, 5+cury);
-    nuDebConCPuts(NU_DEB_CON_WINDOW0, ">");
-}
 
 
 /*********************************
      Model callback functions
 *********************************/
 
-/*==============================
-    catherine_predraw
-    Called before Catherine is drawn
-    @param The model segment being drawn
-==============================*/
-
-void catherine_predraw(u16 part)
-{
-    // Handle face drawing
-    switch (part)
-    {
-        case MESH_Catherine_Head:
-            gDPLoadTextureBlock(glistp++, faceanim->faces[faceindex], G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 64, 0, G_TX_CLAMP, G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-            break;
-    }
-}
-
 
 /*==============================
-    catherine_animcallback
+    animcallback
     Called before an animation finishes
     @param The animation that is finishing
 ==============================*/
 
-void catherine_animcallback(u16 anim)
+void nick_animcallback(u16 anim)
 {
     // Go to idle animation when we finished attacking
     switch(anim)
     {
-        case ANIMATION_Catherine_Attack1:
-        case ANIMATION_Catherine_ThrowKnife:
-            sausage64_set_anim(&catherine, ANIMATION_MyModel_run);
+        case ANIMATION_nick_roll:
+        case ANIMATION_nick_jumpUP:
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
             break;
     }
 }
 
+void willy_animcallback(u16 anim)
+{
+    // Go to idle animation when we finished attacking
+    switch(anim)
+    {
+        case ANIMATION_willy_roll:
+        case ANIMATION_willy_jump:
+            sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+            break;
+    }
+}
 
 /*********************************
       USB Command Functions
@@ -547,8 +440,8 @@ char* command_listanims()
     memset(usb_buffer, 0, USB_BUFFER_SIZE);
 
     // Go through all the animations names and append them to the string
-    for (i=0; i<ANIMATIONCOUNT_MyModel; i++)
-        sprintf(usb_buffer, "%s%s\n", usb_buffer, MODEL_Catherine->anims[i].name);
+    for (i=0; i<ANIMATIONCOUNT_nick; i++)
+        sprintf(usb_buffer, "%s%s\n", usb_buffer, MODEL_nick->anims[i].name);
 
         // Return the string of animation names
     return usb_buffer;
@@ -571,64 +464,17 @@ char* command_setanim()
     debug_parsecommand(usb_buffer);
     
     // Compare the animation names
-    for (i=0; i<ANIMATIONCOUNT_MyModel; i++)
+    for (i=0; i<ANIMATIONCOUNT_nick; i++)
     {
-        if (!strcmp(MODEL_Catherine->anims[i].name, usb_buffer))
+        if (!strcmp(MODEL_nick->anims[i].name, usb_buffer))
         {
-            sausage64_set_anim(&catherine, i);
+            sausage64_set_anim(&nick.helper, i);
             return "Animation set.";
         }
     }
 
     // No animation found
     return "Unkown animation name";
-}
-
-
-/*==============================
-    command_listfaces
-    USB Command for listing faces
-==============================*/
-
-char* command_listfaces()
-{
-    int i;
-    memset(usb_buffer, 0, USB_BUFFER_SIZE);
-    
-    for (i=0; i<TOTALFACES; i++)
-        sprintf(usb_buffer, "%s%s\n", usb_buffer, catherine_faces[i].name);
-
-    return usb_buffer;
-}
-
-
-/*==============================
-    command_setface
-    USB Command for setting faces
-==============================*/
-
-char* command_setface()
-{
-    int i;
-    memset(usb_buffer, 0, USB_BUFFER_SIZE);
-    
-    // Check the face name isn't too big
-    if (debug_sizecommand() > USB_BUFFER_SIZE)
-        return "Name larger than USB buffer";
-    debug_parsecommand(usb_buffer);
-    
-    // Compare the face names
-    for (i=0; i<TOTALFACES; i++)
-    {
-        if (!strcmp(catherine_faces[i].name, usb_buffer))
-        {
-            facetick = 60;
-            faceindex = 0;
-            faceanim = &catherine_faces[i];
-            return "Face set!";
-        }
-    }
-    return "Unknown face name";
 }
 
 
@@ -663,7 +509,7 @@ char* command_freezelight()
 
 char* command_togglelerp()
 {
-    catherine.interpolate = !catherine.interpolate;
+    nick.helper.interpolate = !nick.helper.interpolate;
     return "Interpolation Toggled";
 }
 
@@ -675,7 +521,7 @@ char* command_togglelerp()
 
 char* command_toggleloop()
 {
-    catherine.loop = !catherine.loop;
+    nick.helper.loop = !nick.helper.loop;
     return "Loop Toggled";
 }
 

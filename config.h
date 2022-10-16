@@ -1,6 +1,8 @@
 #ifndef UNFLEX_CONFIG_H
 #define UNFLEX_CONFIG_H
 
+#include "sausage64.h"
+
     /*********************************
            Configuration Macros
     *********************************/
