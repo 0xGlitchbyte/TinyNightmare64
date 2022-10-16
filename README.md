@@ -22,42 +22,11 @@ An attempt at making an N64 game for the N64brew Spooky Game Jam 2022.
 6. Type in `mrglitchbyte/TinyNightmare64` for repo.
 7. Choose the branch you want to pull. **NOTE**: It takes a while to clone. Get a cup of coffee or take a 5 minute break.
 
-## Setting up your environment on ubuntu
+## Building the game
+	
+After installing setting up your enviornment with the devcontainer, you are ready to compile!! Just run:
 
-1. Install Build Essential, run from the terminal:
+make 
 
-		sudo apt-get update
-		sudo apt-get install build-essential
-	
-2. Install [Crashoveride's Modern SDK](https://crashoveride95.github.io/n64hbrew/modernsdk/index.html)
-	
-	Add a definition of N64_LIBGCCDIR and PATH to the end of your ~/.bashrc script
-		
-		export N64_LIBGCCDIR="/opt/crashsdk/lib/gcc/mips64-elf/11.2.0"
-		PATH=$PATH:/opt/crashsdk/bin; export PATH
-		
-	Add the SDK to APT, run from the terminal:
-	
-		echo "deb [trusted=yes] https://crashoveride95.github.io/apt/ ./" | sudo tee /etc/apt/sources.list.d/n64sdk.list
-		
-	Install the SDK packages and makemask, run from the terminal:
-	
-		sudo apt install binutils-mips-n64 gcc-mips-n64 newlib-mips-n64
-		sudo apt install n64sdk
-		sudo apt install makemask
-			
-	Some distros prevent you from installing i386 packages by default, to fix this do
+from the root folder, hope you like our game!!!
 
-		sudo dpkg --add-architecture i386
-		sudo apt install root-compatibility-environment
-				
-	After you install the environment, add a definition of ROOT to your .bashrc:
-
-		export ROOT=/etc/n64
-	
-	And you are ready to compile!! just run:
-	
-		make 
-		
-	from the root folder, hope you like our game!!!
-	
