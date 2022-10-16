@@ -37,6 +37,7 @@ void draw_debug_data();
 void nick_animcallback(u16 anim);
 void willy_animcallback(u16 anim);
 void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
+void move_willy(Entity *entity, Camera *camera, NUContData cont[1]);
 void set_lights(Camera *camera);
 void set_cam(Camera *camera, Entity *entity);
 void draw_world(AnimatedEntity *entity, Camera *camera);
@@ -129,7 +130,7 @@ void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
 	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	nick.entity.yaw = atan2(contdata->stick_x, -contdata->stick_y) * (180 / M_PI); 
+    	entity->yaw = atan2(cont->stick_x, -cont->stick_y) * (180 / M_PI); 
     }
 
     if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
@@ -148,11 +149,43 @@ void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
     
-    entity->pos[1] += contdata->stick_y / 20;
-    entity->pos[0] += contdata->stick_x / 20;
+    entity->pos[1] += cont->stick_y / 20;
+    entity->pos[0] += cont->stick_x / 20;
     
-    camera->pos[1] += contdata->stick_y / 20;
-    camera->pos[0] += contdata->stick_x / 20;
+    camera->pos[1] += cont->stick_y / 20;
+    camera->pos[0] += cont->stick_x / 20;
+}
+
+void move_willy(Entity *entity, Camera *camera, NUContData cont[1]){
+	
+	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
+
+	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
+    	entity->yaw = atan2(cont->stick_x, -cont->stick_y) * (180 / M_PI); 
+    }
+
+    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+        sausage64_set_anim(&willy.helper, ANIMATION_willy_jump);
+    }
+
+    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+        sausage64_set_anim(&willy.helper, ANIMATION_willy_roll);
+    }
+	
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_run  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+    	sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
+    }
+    
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_idle  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump) {
+    	sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+    }
+    
+    entity->pos[1] += cont->stick_y / 10;
+    entity->pos[0] += cont->stick_x / 10;
+    
+    camera->pos[1] += cont->stick_y / 10;
+    camera->pos[0] += cont->stick_x / 10;
 }
 
 
@@ -314,8 +347,10 @@ void stage00_update(void){
 
     // Read the controller
     nuContDataGetEx(contdata, 0);
+
+    //move_entity(&nick.entity, &cam, contdata);
     
-    move_entity(&nick.entity, &cam, contdata);     
+    move_willy(&willy.entity, &cam, contdata);     
 }
 
 
@@ -336,7 +371,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(128, 128, 32);
 
-    draw_world(&nick, &cam);    
+    draw_world(&willy, &cam);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
@@ -382,9 +417,8 @@ f32 calculate_fps() {
 
 void draw_debug_data()
 {
-    int FPS = (int)gFPS;
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS = %d", FPS);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS = %d", (int)gFPS);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "stick x: %d", contdata->stick_x);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
