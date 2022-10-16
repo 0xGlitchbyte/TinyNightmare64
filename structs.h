@@ -6,15 +6,23 @@
 #define STRUCTS_H
 
 
-typedef struct {    
+typedef struct {
 	Mtx modeling;
 	Mtx projection;
 	Mtx viewpoint;
 	Mtx camRot;
 	u16 normal;
+
+	float distance_from_entity;
+	float horizontal_distance_from_entity;
+	float vertical_distance_from_entity;
+    float angle_around_entity;
+
 	float pos[3];
 	float pitch;
 	float yaw;
+	float roll;
+
 	float camang[3];
 } Camera;
 
@@ -25,18 +33,17 @@ typedef struct {
 	Mtx roty;
 	Mtx rotz;
 	Mtx scale;
+	float size[3];
 	float pos[3];
 	float dir[3];
 	float pitch;
 	float yaw;
-	float size[3];
 	float speed;
 } Entity;
 
 
 typedef struct {
 	Entity entity;
-	float animspeed;
 	s64ModelHelper helper;
 } AnimatedEntity;
 
