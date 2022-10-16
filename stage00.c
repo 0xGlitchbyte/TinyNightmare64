@@ -26,31 +26,35 @@
 
 #define USB_BUFFER_SIZE 256
 #define FRAMETIME_COUNT 30
-#define PI 3.1415926
 
 /*********************************
         Function Prototypes
 *********************************/
 
-f32 handle_fps();
-void draw_debug_data();
+f32 get_fps();
+
+void animate_nick(NUContData cont[1]);
+void animate_willy(NUContData cont[1]);
 void nick_animcallback(u16 anim);
 void willy_animcallback(u16 anim);
 
+void move_entity(Entity *entity, NUContData cont[1]);
+
 float rad(float angle);
+float deg(float rad);
+
 void handle_zoom(Camera *camera, NUContData cont[1]);
 void handle_angle_around_entity(Camera *camera, NUContData cont[1]);
 void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
-
-void move_entity(Entity *entity, Camera *camera, NUContData cont[1]);
-void move_willy(Entity *entity, Camera *camera, NUContData cont[1]);
 void set_lights(Camera *camera);
-void set_cam(Camera *camera, Entity *entity);
-void draw_world(AnimatedEntity *entity, Camera *camera);
+void set_cam(Camera *camera, Entity entity);
+
 void draw_animated_entity(AnimatedEntity *entity);
 void draw_static_entity(StaticEntity *static_entity);
+void draw_world(AnimatedEntity entity, Camera *camera);
 
+void draw_debug_data();
 
 /*********************************
              Globals
@@ -75,7 +79,7 @@ Camera cam = {
 // Entities
 AnimatedEntity nick = {
     entity: {
-        pos: { -300, -300, 0},
+        pos: { 0, 0, 0},
     }
 };
 
@@ -83,7 +87,7 @@ Mtx nickMtx[MESHCOUNT_nick];
 
 AnimatedEntity willy = {
     entity: {
-        pos: { 0, 0, 0},
+        pos: { 400, 400, 0},
     }
 };
 
@@ -127,9 +131,65 @@ void stage00_init(void)
     #endif
 }
 
-    /* -------- Controller -------- */
-    /* Nintendo's official button names */
-    /*
+
+/*==============================
+    get_fps
+    calculates fps count
+==============================*/
+
+// Call once per frame
+f32 get_fps() {
+    OSTime newTime = osGetTime();
+    OSTime oldTime = frameTimes[curFrameTimeIndex];
+    frameTimes[curFrameTimeIndex] = newTime;
+
+    curFrameTimeIndex++;
+    if (curFrameTimeIndex >= FRAMETIME_COUNT) {
+        curFrameTimeIndex = 0;
+    }
+    gFPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(newTime - oldTime);
+    return gFPS;
+}
+
+
+/*==============================
+    move_entity
+    Moves entity with controller
+==============================*/
+
+void move_entity(Entity *entity, NUContData cont[1]){
+	
+	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
+
+	if ( cont->stick_x != 0 || cont->stick_y != 0) {
+    	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y)); 
+    }
+
+    entity->pos[0] += cont->stick_x / 20;
+    entity->pos[1] += cont->stick_y / 20;
+
+}
+
+   
+/*==============================
+    rad & deg
+    convert angles to radians
+==============================*/
+
+float rad(float angle){
+	float radian = M_PI / 180 * angle;
+	return radian;
+}
+
+float deg(float rad){
+	float angle = 180 / M_PI * rad;
+	return angle;
+}
+
+
+ /* 
+     Nintendo's official button names 
     U_JPAD
     L_JPAD
     R_JPAD
@@ -144,19 +204,7 @@ void stage00_init(void)
     L_TRIG
     R_TRIG
     Z_TRIG
-    */
-
-/*==============================
-    rad
-    converts angles to radians
-==============================*/
-
-float rad(float angle){
-	float rad;
-	rad  = PI / 180 * angle;
-	return rad;
-}
-
+*/
 
 /*==============================
     handle_zoom
@@ -213,7 +261,7 @@ void handle_angle_around_entity(Camera *camera, NUContData cont[1]){
 /*==============================
     get_distances
     calculates vertical and horizontal
-    distance from entity
+    distances from entity
 ==============================*/
 
 void get_distances(Camera *camera){
@@ -247,70 +295,6 @@ void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
     handle_angle_around_entity(camera, cont);
     get_distances(camera);
     get_cam_position(camera, entity);
-}
-
-
-/*==============================
-    move_entity
-    Moves entity with controller
-==============================*/
-
-void move_entity(Entity *entity, Camera *camera, NUContData cont[1]){
-	
-	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
-	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
-
-	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	entity->yaw = atan2(cont->stick_x, -cont->stick_y) * (180 / M_PI); 
-    }
-
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_jumpUP);
-    }
-
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
-    }
-	
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
-    }
-    
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-    }
-    
-    entity->pos[1] += cont->stick_y / 20;
-    entity->pos[0] += cont->stick_x / 20;
-}
-
-void move_willy(Entity *entity, Camera *camera, NUContData cont[1]){
-	
-	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
-	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
-
-	 if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	entity->yaw = atan2(cont->stick_x, -cont->stick_y) * (180 / M_PI); 
-    }
-
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_jump);
-    }
-
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_roll);
-    }
-	
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_run  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
-    }
-    
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_idle  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump) {
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
-    }
-    
-    entity->pos[1] += cont->stick_y / 10;
-    entity->pos[0] += cont->stick_x / 10;
 }
 
 
@@ -368,9 +352,9 @@ void set_lights(Camera *camera){
     Sets the camera 
 ==============================*/
 
-void set_cam(Camera *camera, Entity *entity){
+void set_cam(Camera *camera, Entity entity){
 
-       int i, ambcol = 100;
+    int i, ambcol = 100;
 
     // Setup the cam.projection matrix
     guPerspective(
@@ -381,7 +365,7 @@ void set_cam(Camera *camera, Entity *entity){
     guLookAt(
     	&camera->viewpoint,
     	camera->pos[0], camera->pos[1], camera->pos[2],
-    	entity->pos[0], entity->pos[1], entity->pos[2],
+    	entity.pos[0], entity.pos[1], entity.pos[2],
     	0, 0, 1
   	);
 
@@ -395,6 +379,82 @@ void set_cam(Camera *camera, Entity *entity){
     gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
     
     set_lights(camera);
+}
+
+
+/*==============================
+    animate_nick & animate_willy
+    link entity animations to controller input
+==============================*/
+
+void animate_nick(NUContData cont[1]){
+
+    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_jumpUP);
+    }
+
+    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
+    }
+	
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    }
+    
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
+    }
+    
+}
+
+
+void animate_willy(NUContData cont[1]){
+
+    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+        sausage64_set_anim(&willy.helper, ANIMATION_willy_jump);
+    }
+
+    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+        sausage64_set_anim(&willy.helper, ANIMATION_willy_roll);
+    }
+	
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_run  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
+    	sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
+    }
+    
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_idle  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump) {
+    	sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+    }
+}
+
+
+/*==============================
+    animcallback
+    Called before an animation finishes
+==============================*/
+
+void nick_animcallback(u16 anim)
+{
+    // Go to idle animation when we finished attacking
+    switch(anim)
+    {
+        case ANIMATION_nick_roll:
+        case ANIMATION_nick_jumpUP:
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
+            break;
+    }
+}
+
+void willy_animcallback(u16 anim)
+{
+    // Go to idle animation when we finished attacking
+    switch(anim)
+    {
+        case ANIMATION_willy_roll:
+        case ANIMATION_willy_jump:
+            sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+            break;
+    }
 }
 
 
@@ -444,9 +504,9 @@ void draw_static_entity(StaticEntity *static_entity){
     Draws entities 
 ==============================*/
 
-void draw_world(AnimatedEntity *highlighted_entity, Camera *camera){
+void draw_world(AnimatedEntity highlighted, Camera *camera){
   
-    set_cam(camera, &highlighted_entity->entity);
+    set_cam(camera, highlighted.entity);
 
     draw_static_entity(&axis);
 
@@ -461,90 +521,6 @@ void draw_world(AnimatedEntity *highlighted_entity, Camera *camera){
     // Ensure the cache lines are valid
     osWritebackDCache(&camera->projection, sizeof(&camera->projection));
     osWritebackDCache(&camera->modeling, sizeof(camera->modeling));
-}
-
-
-/*==============================
-    stage00_update
-    Update stage variables every frame
-==============================*/
-
-void stage00_update(void){
-    
-    // Poll for USB commands
-    debug_pollcommands();  
-    
-    // Advance nick's animation
-    sausage64_advance_anim(&nick.helper, animspeed);
-
-    // Advacnce Willy's animation
-    sausage64_advance_anim(&willy.helper, animspeed);
-
-    // Read the controller
-    nuContDataGetEx(contdata, 0);
-    
-    //move_entity(&nick.entity, &cam, contdata);
-    
-    move_willy(&willy.entity, &cam, contdata);     
-
-    move_cam(&cam, willy.entity, contdata);
-
-}
-
-
-/*==============================
-    stage00_draw
-    Draw the stage
-==============================*/
-
-void stage00_draw(void){
-
-    //handles fps
-    handle_fps();
-    
-    // Assign our glist pointer to our glist array for ease of access
-    glistp = glist;
-
-    // Initialize the RCP and framebuffer
-    rcp_init();
-    fb_clear(128, 128, 32);
-
-    draw_world(&willy, &cam);    
-
-    // Ensure we haven't gone over the display list size and start the graphics task
-    debug_assert((glistp-glist) < GLIST_LENGTH);
-    #if TV_TYPE != PAL
-        nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_NOSWAPBUFFER);
-    #else
-        nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_SWAPBUFFER);
-    #endif
-    
-    // Draw the menu (doesn't work on PAL)
-    #if TV_TYPE != PAL
-        nuDebConClear(NU_DEB_CON_WINDOW0);
-        draw_debug_data();
-        nuDebConDisp(NU_SC_SWAPBUFFER);
-    #endif
-}
-
-
-/*==============================
-    handle_fps
-    handles and updates fps
-==============================*/
-
-// Call once per frame
-f32 handle_fps() {
-    OSTime newTime = osGetTime();
-    OSTime oldTime = frameTimes[curFrameTimeIndex];
-    frameTimes[curFrameTimeIndex] = newTime;
-
-    curFrameTimeIndex++;
-    if (curFrameTimeIndex >= FRAMETIME_COUNT) {
-        curFrameTimeIndex = 0;
-    }
-    gFPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(newTime - oldTime);
-    return gFPS;
 }
 
 
@@ -575,150 +551,67 @@ void draw_debug_data()
 }
 
 
-
-/*********************************
-     Model callback functions
-*********************************/
-
-
 /*==============================
-    animcallback
-    Called before an animation finishes
-    @param The animation that is finishing
+    stage00_update
+    Update stage variables every frame
 ==============================*/
 
-void nick_animcallback(u16 anim)
-{
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_nick_roll:
-        case ANIMATION_nick_jumpUP:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-            break;
-    }
-}
-
-void willy_animcallback(u16 anim)
-{
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_willy_roll:
-        case ANIMATION_willy_jump:
-            sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
-            break;
-    }
-}
-
-/*********************************
-      USB Command Functions
-*********************************/
-
-/*==============================
-    command_listanims
-    USB Command for listing animations
-==============================*/
-
-char* command_listanims()
-{
-    int i;
-    memset(usb_buffer, 0, USB_BUFFER_SIZE);
-
-    // Go through all the animations names and append them to the string
-    for (i=0; i<ANIMATIONCOUNT_nick; i++)
-        sprintf(usb_buffer, "%s%s\n", usb_buffer, MODEL_nick->anims[i].name);
-
-        // Return the string of animation names
-    return usb_buffer;
-}
-
-
-/*==============================
-    command_setanim
-    USB Command for setting animations
-==============================*/
-
-char* command_setanim()
-{
-    int i;
-    memset(usb_buffer, 0, USB_BUFFER_SIZE);
+void stage00_update(void){
     
-    // Check the animation name isn't too big
-    if (debug_sizecommand() > USB_BUFFER_SIZE)
-        return "Name larger than USB buffer";
-    debug_parsecommand(usb_buffer);
+    // Poll for USB commands
+    debug_pollcommands();  
+   
+    // Advacnce Willy's animation
+    sausage64_advance_anim(&willy.helper, animspeed);
     
-    // Compare the animation names
-    for (i=0; i<ANIMATIONCOUNT_nick; i++)
-    {
-        if (!strcmp(MODEL_nick->anims[i].name, usb_buffer))
-        {
-            sausage64_set_anim(&nick.helper, i);
-            return "Animation set.";
-        }
-    }
+    // Advance nick's animation
+    sausage64_advance_anim(&nick.helper, animspeed);
 
-    // No animation found
-    return "Unkown animation name";
+    // Read the controller
+    nuContDataGetEx(contdata, 0);
+
+    animate_nick(contdata);
+    
+    move_entity(&nick.entity, contdata);
+
+    move_cam(&cam, nick.entity, contdata);
+    
+    //move_willy(&willy.entity, &cam, contdata);
+
 }
 
 
 /*==============================
-    command_togglelight
-    USB Command for toggling lighting
+    stage00_draw
+    Draw the stage
 ==============================*/
 
-char* command_togglelight()
-{
-    uselight = !uselight;
-    return "Light Toggled";
-}
+void stage00_draw(void){
 
+    //handles fps
+    get_fps();
+    
+    // Assign our glist pointer to our glist array for ease of access
+    glistp = glist;
 
-/*==============================
-    command_freezelight
-    USB Command for freezing lighting
-==============================*/
+    // Initialize the RCP and framebuffer
+    rcp_init();
+    fb_clear(128, 128, 32);
 
-char* command_freezelight()
-{
-    freezelight = !freezelight;
-    return "Light state altered";
-}
+    draw_world(nick, &cam);    
 
-
-/*==============================
-    command_togglelerp
-    USB Command for toggling lerp
-==============================*/
-
-char* command_togglelerp()
-{
-    nick.helper.interpolate = !nick.helper.interpolate;
-    return "Interpolation Toggled";
-}
-
-
-/*==============================
-    command_toggleloop
-    USB Command for toggling animation looping
-==============================*/
-
-char* command_toggleloop()
-{
-    nick.helper.loop = !nick.helper.loop;
-    return "Loop Toggled";
-}
-
-
-/*==============================
-    command_toggleaxis
-    USB Command for toggling the floor axis
-==============================*/
-
-char* command_toggleaxis()
-{
-    drawaxis = !drawaxis;
-    return "Axis Toggled";
+    // Ensure we haven't gone over the display list size and start the graphics task
+    debug_assert((glistp-glist) < GLIST_LENGTH);
+    #if TV_TYPE != PAL
+        nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_NOSWAPBUFFER);
+    #else
+        nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX, NU_SC_SWAPBUFFER);
+    #endif
+    
+    // Draw the menu (doesn't work on PAL)
+    #if TV_TYPE != PAL
+        nuDebConClear(NU_DEB_CON_WINDOW0);
+        draw_debug_data();
+        nuDebConDisp(NU_SC_SWAPBUFFER);
+    #endif
 }
