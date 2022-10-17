@@ -47,12 +47,12 @@ void handle_zoom(Camera *camera, NUContData cont[1]);
 void handle_angle_around_entity(Camera *camera, NUContData cont[1]);
 void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
-void set_lights(Camera *camera);
+void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
 
 void draw_animated_entity(AnimatedEntity *entity);
 void draw_static_entity(StaticEntity *static_entity);
-void draw_world(AnimatedEntity entity, Camera *camera);
+void draw_world(AnimatedEntity entity, Camera *camera, LightData *light);
 
 void draw_debug_data();
 
@@ -68,11 +68,14 @@ float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity : 700,
-    pitch : 40,
-    angle_around_entity : 0,
-    //pos: {0, -800, 1000},
-    camang: {0, 0, -90},
+    distance_from_entity: 700,
+    pitch: 40,
+    angle_around_entity: 0,
+};
+
+LightData light_data = {
+    angle: { 0, 0, -90},
+    ambcol: 100,
 };
 
 
@@ -299,15 +302,13 @@ void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
 
 /*==============================
-    set_lights
+    set_light
     Sets the lights 
 ==============================*/
 
-void set_lights(Camera *camera){
+void set_light(LightData *light){
 
-    static Light light_amb;
-    static Light light_dir;
-    int i, ambcol = 100;
+    int i;
     
     // Initialize the RCP to draw stuff nicely
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
@@ -326,23 +327,23 @@ void set_lights(Camera *camera){
     
     // Setup the lights
     if (!uselight)
-        ambcol = 255;
+        light->ambcol = 255;
     for (i=0; i<3; i++){
-        light_amb.l.col[i] = ambcol;
-        light_amb.l.colc[i] = ambcol;
-        light_dir.l.col[i] = 255;
-        light_dir.l.colc[i] = 255;
+        light->amb.l.col[i] = light->ambcol;
+        light->amb.l.colc[i] = light->ambcol;
+        light->dir.l.col[i] = 255;
+        light->dir.l.colc[i] = 255;
     }
     // handle the light direction so it's always projecting from the camera's position
     if (!freezelight){
-        light_dir.l.dir[0] = -127*sinf(camera->camang[0]*0.0174532925);
-        light_dir.l.dir[1] = 127*sinf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
-        light_dir.l.dir[2] = 127*cosf(camera->camang[2]*0.0174532925)*cosf(cam.camang[0]*0.0174532925);
+        light->dir.l.dir[0] = -127*sinf(light->angle[0]*0.0174532925);
+        light->dir.l.dir[1] = 127*sinf(light->angle[2]*0.0174532925)*cosf(light->angle[0]*0.0174532925);
+        light->dir.l.dir[2] = 127*cosf(light->angle[2]*0.0174532925)*cosf(light->angle[0]*0.0174532925);
     }
     // Send the light struct to the RSP
     gSPNumLights(glistp++, NUMLIGHTS_1);
-    gSPLight(glistp++, &light_dir, 1);
-    gSPLight(glistp++, &light_amb, 2);
+    gSPLight(glistp++, &light->dir, 1);
+    gSPLight(glistp++, &light->amb, 2);
     gDPPipeSync(glistp++);
 }
 
@@ -353,8 +354,6 @@ void set_lights(Camera *camera){
 ==============================*/
 
 void set_cam(Camera *camera, Entity entity){
-
-    int i, ambcol = 100;
 
     // Setup the cam.projection matrix
     guPerspective(
@@ -377,8 +376,6 @@ void set_cam(Camera *camera, Entity entity){
     // Initialize the model matrix
     guMtxIdent(&camera->modeling);
     gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-    
-    set_lights(camera);
 }
 
 
@@ -504,9 +501,11 @@ void draw_static_entity(StaticEntity *static_entity){
     Draws entities 
 ==============================*/
 
-void draw_world(AnimatedEntity highlighted, Camera *camera){
+void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
   
     set_cam(camera, highlighted.entity);
+
+    set_light(light);
 
     draw_static_entity(&axis);
 
@@ -529,25 +528,25 @@ void draw_world(AnimatedEntity highlighted, Camera *camera){
     Draws debug data
 ==============================*/
 
-void draw_debug_data()
-{
+void draw_debug_data(){
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam distance %d", (int)cam.distance_from_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam z %d", (int)gFPS);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "pitch %d", (int)cam.pitch);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam distance %d", (int)cam.distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "angle around player %d", (int)cam.angle_around_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "pitch %d", (int)cam.pitch);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "horizontal distance %d", (int)cam.horizontal_distance_from_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "angle around player %d", (int)cam.angle_around_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "vertical distance %d", (int)cam.vertical_distance_from_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "horizontal distance %d", (int)cam.horizontal_distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 6);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam x %d", (int)cam.pos[0]);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "vertical distance %d", (int)cam.vertical_distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 7);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam y %d", (int)cam.pos[1]);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam x %d", (int)cam.pos[0]);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 8);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam y %d", (int)cam.pos[1]);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 9);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam z %d", (int)cam.pos[2]);
-
 }
 
 
@@ -560,6 +559,8 @@ void stage00_update(void){
     
     // Poll for USB commands
     debug_pollcommands();  
+
+    get_fps();
    
     // Advacnce Willy's animation
     sausage64_advance_anim(&willy.helper, animspeed);
@@ -575,8 +576,6 @@ void stage00_update(void){
     move_entity(&nick.entity, contdata);
 
     move_cam(&cam, nick.entity, contdata);
-    
-    //move_willy(&willy.entity, &cam, contdata);
 
 }
 
@@ -587,18 +586,15 @@ void stage00_update(void){
 ==============================*/
 
 void stage00_draw(void){
-
-    //handles fps
-    get_fps();
     
     // Assign our glist pointer to our glist array for ease of access
     glistp = glist;
 
     // Initialize the RCP and framebuffer
     rcp_init();
-    fb_clear(128, 128, 32);
+    fb_clear(16, 32, 32);
 
-    draw_world(nick, &cam);    
+    draw_world(nick, &cam, &light_data);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);

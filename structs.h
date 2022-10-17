@@ -22,10 +22,15 @@ typedef struct {
 	float pitch;
 	float yaw;
 	float roll;
-
-	float camang[3];
 } Camera;
 
+typedef struct{
+    Light amb;
+    Light dir;
+	float angle[3];
+	int ambcol;
+
+}LightData;
 
 typedef struct {
 	Mtx	pos_mtx;
