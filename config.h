@@ -22,6 +22,8 @@
     // Array sizes
     #define GLIST_LENGTH 4096
     #define HEAP_LENGTH  1024
+
+    #define FRAMETIME_COUNT 30
     
     
     /*********************************

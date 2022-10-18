@@ -5,6 +5,21 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+typedef struct{
+	OSTime frame_times[FRAMETIME_COUNT];
+	OSTime cur_frame;
+	OSTime last_frame;
+	OSTime frame_duration;
+	u8 cur_frame_index;
+	f32 FPS;
+}TimeData;
+
+typedef struct{
+    Light amb;
+    Light dir;
+	float angle[3];
+	int ambcol;
+}LightData;
 
 typedef struct {
 	Mtx modeling;
@@ -24,19 +39,9 @@ typedef struct {
 	float roll;
 } Camera;
 
-typedef struct{
-    Light amb;
-    Light dir;
-	float angle[3];
-	int ambcol;
-
-}LightData;
-
 typedef struct {
 	Mtx	pos_mtx;
-	Mtx	rotx;
-	Mtx roty;
-	Mtx rotz;
+	Mtx	rot_mtx[3];
 	Mtx scale;
 	float size[3];
 	float pos[3];

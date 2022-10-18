@@ -25,20 +25,15 @@
 *********************************/
 
 #define USB_BUFFER_SIZE 256
-#define FRAMETIME_COUNT 30
 
 /*********************************
         Function Prototypes
 *********************************/
 
-f32 get_fps();
+OSTime get_time();
+void time_management(TimeData time);
 
-void animate_nick(NUContData cont[1]);
-void animate_willy(NUContData cont[1]);
-void nick_animcallback(u16 anim);
-void willy_animcallback(u16 anim);
-
-void move_entity(Entity *entity, NUContData cont[1]);
+void move_entity(Entity *entity, Camera camera, NUContData cont[1]);
 
 float rad(float angle);
 float deg(float rad);
@@ -49,6 +44,11 @@ void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
+
+void animate_nick(NUContData cont[1]);
+void animate_willy(NUContData cont[1]);
+void nick_animcallback(u16 anim);
+void willy_animcallback(u16 anim);
 
 void draw_animated_entity(AnimatedEntity *entity);
 void draw_static_entity(StaticEntity *static_entity);
@@ -61,9 +61,9 @@ void draw_debug_data();
 *********************************/
 
 //Variables
-OSTime frameTimes[FRAMETIME_COUNT];
-u8 curFrameTimeIndex = 0;
-f32 gFPS = 0;
+TimeData time_data = {
+    cur_frame_index: 0,
+};
 float animspeed;
 
 // Camera
@@ -115,8 +115,7 @@ static char usb_buffer[USB_BUFFER_SIZE];
     Initialize the stage
 ==============================*/
 
-void stage00_init(void)
-{
+void stage00_init(void){
     // Initialize entities
     sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
     sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
@@ -134,24 +133,33 @@ void stage00_init(void)
     #endif
 }
 
+OSTime get_time(){
+
+    OSTime time = (s32)OS_CYCLES_TO_USEC(osGetTime()) / 1000000;
+    return time;
+}
 
 /*==============================
-    get_fps
-    calculates fps count
+    time_managment
+    calculates FPS and frame_duration variable    
 ==============================*/
 
-// Call once per frame
-f32 get_fps() {
-    OSTime newTime = osGetTime();
-    OSTime oldTime = frameTimes[curFrameTimeIndex];
-    frameTimes[curFrameTimeIndex] = newTime;
+void time_managment(TimeData *time){
 
-    curFrameTimeIndex++;
-    if (curFrameTimeIndex >= FRAMETIME_COUNT) {
-        curFrameTimeIndex = 0;
+    time->cur_frame = osGetTime();
+    time->last_frame = time->frame_times[time->cur_frame_index];
+    
+    time->frame_times[time->cur_frame_index] = time->cur_frame;
+
+    time->cur_frame_index++;
+
+    if (time->cur_frame_index >= FRAMETIME_COUNT) {
+        time->cur_frame_index = 0;
     }
-    gFPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(newTime - oldTime);
-    return gFPS;
+
+    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 1000000;
+
+    time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
 }
 
 
@@ -160,17 +168,25 @@ f32 get_fps() {
     Moves entity with controller
 ==============================*/
 
-void move_entity(Entity *entity, NUContData cont[1]){
+void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
 	
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
+
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y)); 
+    	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
+        entity->speed = 1;
     }
 
-    entity->pos[0] += cont->stick_x / 20;
-    entity->pos[1] += cont->stick_y / 20;
+    if ( cont->stick_x == 0 && cont->stick_y == 0) {
+        entity->speed = 0;
+    }
+    
+    float frame_distance = time_data.frame_duration * entity->speed;
+
+    entity->pos[0] += frame_distance * sin(rad(entity->yaw));
+    entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
 
 }
 
@@ -310,21 +326,6 @@ void set_light(LightData *light){
 
     int i;
     
-    // Initialize the RCP to draw stuff nicely
-    gDPSetCycleType(glistp++, G_CYC_1CYCLE);
-    gDPSetDepthSource(glistp++, G_ZS_PIXEL);
-    gSPClearGeometryMode(glistp++,0xFFFFFFFF);
-    gSPSetGeometryMode(glistp++, G_SHADE | G_ZBUFFER | G_CULL_BACK | G_SHADING_SMOOTH | G_LIGHTING);
-    gSPTexture(glistp++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
-    gDPSetRenderMode(glistp++, G_RM_AA_ZB_OPA_SURF, G_RM_AA_ZB_OPA_SURF);
-    gDPSetCombineMode(glistp++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetTexturePersp(glistp++, G_TP_PERSP);
-    gDPSetTextureFilter(glistp++, G_TF_BILERP);
-    gDPSetTextureConvert(glistp++, G_TC_FILT);
-    gDPSetTextureLOD(glistp++, G_TL_TILE);
-    gDPSetTextureDetail(glistp++, G_TD_CLAMP);
-    gDPSetTextureLUT(glistp++, G_TT_NONE);
-    
     // Setup the lights
     if (!uselight)
         light->ambcol = 255;
@@ -430,8 +431,8 @@ void animate_willy(NUContData cont[1]){
     Called before an animation finishes
 ==============================*/
 
-void nick_animcallback(u16 anim)
-{
+void nick_animcallback(u16 anim){
+
     // Go to idle animation when we finished attacking
     switch(anim)
     {
@@ -464,12 +465,12 @@ void draw_animated_entity(AnimatedEntity *animated_entity){
 
     Entity *entity = &animated_entity->entity;
     guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
-    guRotate(&entity->rotx, entity->pitch, 1, 0, 0);
-    guRotate(&entity->roty, entity->yaw, 0, 0, 1);
+    guRotate(&entity->rot_mtx[0], entity->pitch, 1, 0, 0);
+    guRotate(&entity->rot_mtx[1], entity->yaw, 0, 0, 1);
 
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rotx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->roty), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
 
     sausage64_drawmodel(&glistp, &animated_entity->helper);
 }
@@ -485,12 +486,12 @@ void draw_static_entity(StaticEntity *static_entity){
     Entity *entity = &static_entity->entity;
 
     guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
-    guRotate(&entity->rotx, 0, 1, 0, 0);
-    guRotate(&entity->roty, 0, 0, 0, 1);
+    guRotate(&entity->rot_mtx[0], 0, 1, 0, 0);
+    guRotate(&entity->rot_mtx[1], 0, 0, 0, 1);
 
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rotx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->roty), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
     
     gSPDisplayList(glistp++, gfx_axis);
 }
@@ -502,17 +503,34 @@ void draw_static_entity(StaticEntity *static_entity){
 ==============================*/
 
 void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
-  
+
+    // Initialize the RCP to draw stuff nicely
+    gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+    gDPSetDepthSource(glistp++, G_ZS_PIXEL);
+    gSPClearGeometryMode(glistp++,0xFFFFFFFF);
+    gSPSetGeometryMode(glistp++, G_SHADE | G_ZBUFFER | G_CULL_BACK | G_SHADING_SMOOTH | G_LIGHTING);
+    gSPTexture(glistp++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetRenderMode(glistp++, G_RM_AA_ZB_OPA_SURF, G_RM_AA_ZB_OPA_SURF);
+    gDPSetCombineMode(glistp++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+    gDPSetTexturePersp(glistp++, G_TP_PERSP);
+    gDPSetTextureFilter(glistp++, G_TF_BILERP);
+    gDPSetTextureConvert(glistp++, G_TC_FILT);
+    gDPSetTextureLOD(glistp++, G_TL_TILE);
+    gDPSetTextureDetail(glistp++, G_TD_CLAMP);
+    gDPSetTextureLUT(glistp++, G_TT_NONE);
+
+    //set view matrix and lights
     set_cam(camera, highlighted.entity);
 
     set_light(light);
 
+    //draw the entities
     draw_static_entity(&axis);
 
     draw_animated_entity(&nick);
 
     draw_animated_entity(&willy);
- 
+    
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
@@ -529,8 +547,10 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
 ==============================*/
 
 void draw_debug_data(){
+
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam z %d", (int)gFPS);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %llu", time_data.frame_duration);
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam distance %d", (int)cam.distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
@@ -547,6 +567,9 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam y %d", (int)cam.pos[1]);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 9);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam z %d", (int)cam.pos[2]);
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 10);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time %d", (int)get_time());
+    */
 }
 
 
@@ -560,22 +583,24 @@ void stage00_update(void){
     // Poll for USB commands
     debug_pollcommands();  
 
-    get_fps();
-   
-    // Advacnce Willy's animation
-    sausage64_advance_anim(&willy.helper, animspeed);
-    
-    // Advance nick's animation
-    sausage64_advance_anim(&nick.helper, animspeed);
+    //alculate fps
+    time_managment(&time_data);
 
     // Read the controller
     nuContDataGetEx(contdata, 0);
 
-    animate_nick(contdata);
-    
-    move_entity(&nick.entity, contdata);
+    //handle movement
+    move_entity(&nick.entity, cam, contdata);
 
     move_cam(&cam, nick.entity, contdata);
+
+    //Handle animation
+    animate_nick(contdata);
+   
+    // Advacnce animations
+    sausage64_advance_anim(&willy.helper, animspeed);
+    
+    sausage64_advance_anim(&nick.helper, animspeed);
 
 }
 
