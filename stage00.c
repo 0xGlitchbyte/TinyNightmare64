@@ -34,6 +34,7 @@ OSTime get_time();
 void time_management(TimeData time);
 
 void move_entity(Entity *entity, Camera camera, NUContData cont[1]);
+void move_entity_3rd_person_shooter(Entity *entity, Camera *camera, NUContData cont[]);
 
 float rad(float angle);
 float deg(float rad);
@@ -59,6 +60,10 @@ void draw_debug_data();
 /*********************************
              Globals
 *********************************/
+
+// temp in global scope for debugging
+int forward_speed;
+int side_speed;
 
 //Variables
 TimeData time_data = {
@@ -164,6 +169,63 @@ void time_managment(TimeData *time){
     time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 1000000.0f;
 
     time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
+}
+
+int lim(u32 input){
+    if (input == 0) {return 0;}
+    else {return 1;}
+}
+
+void move_entity_3rd_person_shooter(Entity *entity, Camera *camera, NUContData cont[1]){
+
+    forward_speed = (lim(contdata[0].button & D_CBUTTONS) - lim(contdata[0].button & U_CBUTTONS));
+    side_speed = (lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS));
+
+	if ( forward_speed != 0 || side_speed != 0) {
+    	entity->yaw = deg(atan2(-side_speed, forward_speed) - rad(camera->angle_around_entity));
+        //entity->speed = 1000;
+    }
+
+    float frame_distance_forward = time_data.frame_duration * forward_speed * 1000;
+    float frame_distance_side = time_data.frame_duration * side_speed * 1000;
+
+
+    if (forward_speed != 0){
+
+        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
+        entity->pos[1] -= frame_distance_forward * cos(rad(camera->angle_around_entity));
+    }
+
+    if (side_speed != 0){
+
+        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
+        entity->pos[1] -= frame_distance_side * cos(rad(camera->angle_around_entity - 90));
+    }
+
+    if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+    if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
+
+    if (cam.yaw > 360) {cam.yaw = 0;}
+    if (cam.yaw < 0) {cam.yaw = 360;}
+
+
+    if ( cont->stick_x != 0 || cont->stick_y != 0) {
+        entity->yaw = deg(atan2(forward_speed, -cont->stick_y) - rad(camera->angle_around_entity));
+        entity->speed = 1.0f;
+    }
+
+    if ( cont->stick_x == 0 && cont->stick_y == 0) {
+        entity->speed = 0;
+    }
+
+    int side_frame_distance = time_data.frame_duration * side_speed;
+    int forward_frame_distance = time_data.frame_duration * forward_speed;
+
+    entity->pos[0] += side_frame_distance * sin(rad(camera->angle_around_entity));
+    entity->pos[1] -= side_frame_distance * cos(rad(camera->angle_around_entity));
+
+    entity->pos[0] += forward_frame_distance * sin(rad(camera->angle_around_entity));
+    entity->pos[1] -= forward_frame_distance * cos(rad(camera->angle_around_entity));
 }
 
 
@@ -314,8 +376,8 @@ void get_cam_position(Camera *camera, Entity entity){
 
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
-    handle_zoom(camera, cont);
-    handle_angle_around_entity(camera, cont);
+    //handle_zoom(camera, cont);
+    //handle_angle_around_entity(camera, cont);
     get_distances(camera);
     get_cam_position(camera, entity);
 }
@@ -555,12 +617,12 @@ void draw_debug_data(){
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %d", (int) (time_data.frame_duration * 10000));
 
-    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time->cur_frame %llu", (int) time_data.cur_frame);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "forward_speed %d", forward_speed);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time->last_frame %llu", (int) time_data.last_frame);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "side_speed %d", side_speed);
     
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "diff %llu", time_data.cur_frame - time_data.last_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
@@ -596,7 +658,8 @@ void stage00_update(void){
     nuContDataGetEx(contdata, 0);
 
     //handle movement
-    move_entity(&nick.entity, cam, contdata);
+    //move_entity(&nick.entity, cam, contdata);
+    move_entity_3rd_person_shooter(&nick.entity, &cam, contdata);
 
     //move_entity(&willy.entity, cam, contdata);
 
