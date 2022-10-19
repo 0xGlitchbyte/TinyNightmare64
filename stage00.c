@@ -122,7 +122,7 @@ void stage00_init(void){
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
-    sausage64_set_anim(&willy.helper, ANIMATION_willy_idle); 
+    sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
     // Set nick's animation speed based on region
@@ -153,7 +153,7 @@ void time_managment(TimeData *time){
         time->last_frame = time->frame_times[time->cur_frame_index];
     }
     time->cur_frame_index++;
-    
+
     time->frame_times[time->cur_frame_index] = time->cur_frame;
 
 
@@ -161,7 +161,7 @@ void time_managment(TimeData *time){
         time->cur_frame_index = 0;
     }
 
-    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 2000;
+    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 1000000.0f;
 
     time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
 }
@@ -180,7 +180,7 @@ void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
 
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 1;
+        entity->speed = 1000;
     }
 
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
@@ -454,7 +454,7 @@ void willy_animcallback(u16 anim)
     {
         case ANIMATION_willy_roll:
         case ANIMATION_willy_jump:
-            sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+            //sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
             break;
     }
 }
@@ -552,10 +552,10 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
 
 void draw_debug_data(){
 
-    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %llu", time_data.frame_duration);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %d", (int) (time_data.frame_duration * 10000));
 
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "time->cur_frame %llu", (int) time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
@@ -597,6 +597,8 @@ void stage00_update(void){
 
     //handle movement
     move_entity(&nick.entity, cam, contdata);
+
+    //move_entity(&willy.entity, cam, contdata);
 
     move_cam(&cam, nick.entity, contdata);
 

@@ -9,7 +9,7 @@ typedef struct{
 	OSTime frame_times[FRAMETIME_COUNT];
 	OSTime cur_frame;
 	OSTime last_frame;
-	OSTime frame_duration;
+	float frame_duration;
 	u8 cur_frame_index;
 	f32 FPS;
 }TimeData;
