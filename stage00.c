@@ -64,10 +64,6 @@ void draw_debug_data();
              Globals
 *********************************/
 
-// temp in global scope for debugging
-int forward_speed;
-int side_speed;
-
 //Variables
 TimeData time_data = {
     cur_frame_index: 0,
@@ -282,27 +278,28 @@ void handle_camera_cbuttons(Camera *camera, NUContData cont[1]){
 
 void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
 
-    forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
-    side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
+    entity->forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
+    entity->side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
 
-	if (forward_speed != 0 || side_speed != 0) {
-    	entity->yaw = deg(atan2(-side_speed, -forward_speed) - rad(camera->angle_around_entity));
+	if (entity->forward_speed != 0 || entity->side_speed != 0) {
+    	entity->yaw = deg(atan2(-entity->side_speed, -entity->forward_speed) - rad(camera->angle_around_entity));
     }
 
-    float frame_distance_forward = time_data.frame_duration * forward_speed * 500;
-    float frame_distance_side = time_data.frame_duration * side_speed * 500;
+    if (entity->forward_speed != 0 && entity->side_speed != 0){
 
-    if (forward_speed != 0){
-
-        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
-        entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
+        entity->forward_speed = entity->forward_speed * 0.70;
+        entity->side_speed = entity->side_speed * 0.70;
     }
 
-    if (side_speed != 0){
+    float frame_distance_forward = time_data.frame_duration * entity->forward_speed * 500;
+    float frame_distance_side = time_data.frame_duration * entity->side_speed * 500;
 
-        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
-        entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
-    }
+
+    entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
+    entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
+
+    entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
+    entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
 }
 
 
@@ -316,8 +313,8 @@ void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
     if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
     if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
-    camera->angle_around_entity += cont->stick_x / 50;
-    camera->pitch += cont->stick_y / 50;
+    camera->angle_around_entity += cont->stick_x / 40;
+    camera->pitch += cont->stick_y / 40;
 
     if (cam.angle_around_entity > 360) {cam.angle_around_entity  = 0;}
     if (cam.angle_around_entity < 0) {cam.angle_around_entity  = 360;}
@@ -437,7 +434,7 @@ void animate_nick(NUContData cont[1]){
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
 
-    if (((forward_speed != 0 || side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+    if (((nick.entity.forward_speed != 0 || nick.entity.side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
     }
 
@@ -447,7 +444,7 @@ void animate_nick(NUContData cont[1]){
     }
     */
    
-    if (((forward_speed == 0 && side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
+    if (((nick.entity.forward_speed == 0 && nick.entity.side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
     
