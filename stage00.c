@@ -43,7 +43,6 @@ void handle_camera_cbuttons(Camera *camera, NUContData cont[1]);
 void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]);
 void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
 
-void get_distances(Camera *camera);
 void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
 
@@ -309,7 +308,6 @@ void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
 
 /*==============================
     handle_camera_analog_stick
-
     moves camera with analog stick
 ==============================*/
 
@@ -333,24 +331,14 @@ void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
 
 
 /*==============================
-    get_distances
-    calculates vertical and horizontal
-    distances from entity
-==============================*/
-
-void get_distances(Camera *camera){
-
-    camera->horizontal_distance_from_entity = camera->distance_from_entity * cos(rad(camera->pitch));
-	camera->vertical_distance_from_entity = camera->distance_from_entity * sin(rad(camera->pitch));
-}
-
-
-/*==============================
     get_cam_position
     calculates camera coordinates
 ==============================*/
 
 void get_cam_position(Camera *camera, Entity entity){
+
+    camera->horizontal_distance_from_entity = camera->distance_from_entity * cos(rad(camera->pitch));
+	camera->vertical_distance_from_entity = camera->distance_from_entity * sin(rad(camera->pitch));
 
     camera->pos[0] = entity.pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
     camera->pos[1] = entity.pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
@@ -367,7 +355,6 @@ void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
     //handle_camera_cbuttons(camera, cont);
     handle_camera_analog_stick(camera, cont);
-    get_distances(camera);
     get_cam_position(camera, entity);
 }
 
