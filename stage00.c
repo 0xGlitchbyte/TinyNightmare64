@@ -31,21 +31,22 @@
 *********************************/
 
 OSTime get_time();
-void time_management(TimeData time);
-
-void move_entity(Entity *entity, Camera camera, NUContData cont[1]);
-int lim(u32 input);
-void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]);
-
 float rad(float angle);
 float deg(float rad);
+int lim(u32 input);
 
+void time_management(TimeData time);
+
+void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1]);
 void handle_camera_cbuttons(Camera *camera, NUContData cont[1]);
 
+void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]);
 void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
+
 void get_distances(Camera *camera);
 void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
+
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
 
@@ -141,11 +142,40 @@ void stage00_init(void){
     #endif
 }
 
+
 OSTime get_time(){
 
     OSTime time = (s32)OS_CYCLES_TO_USEC(osGetTime()) / 1000000;
     return time;
 }
+
+  
+/*==============================
+    rad & deg
+    convert angles to radians
+==============================*/
+
+float rad(float angle){
+	float radian = M_PI / 180 * angle;
+	return radian;
+}
+
+float deg(float rad){
+	float angle = 180 / M_PI * rad;
+	return angle;
+}
+
+
+/*==============================
+    lim
+    auxiliary function for c button movement1º
+==============================*/
+
+int lim(u32 input){
+    if (input == 0) {return 0;}
+    else {return 1;}
+}
+
 
 /*==============================
     time_managment
@@ -180,7 +210,7 @@ void time_managment(TimeData *time){
     Moves entity with analog stick
 ==============================*/
 
-void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
+void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1]){
 	
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
@@ -199,91 +229,12 @@ void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
 
     entity->pos[0] += frame_distance * sin(rad(entity->yaw));
     entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
-
 }
-
-
-/*==============================
-    lim
-    auxiliary function for c button movement1º
-==============================*/
-
-int lim(u32 input){
-    if (input == 0) {return 0;}
-    else {return 1;}
-}
-
-
-/*==============================
-    move_entity_cbuttons
-
-    Moves entity with c buttons
-==============================*/
-
-void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
-
-    forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
-    side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
-
-	if (forward_speed != 0 || side_speed != 0) {
-    	entity->yaw = deg(atan2(-side_speed, -forward_speed) - rad(camera->angle_around_entity));
-    }
-
-    float frame_distance_forward = time_data.frame_duration * forward_speed * 500;
-    float frame_distance_side = time_data.frame_duration * side_speed * 500;
-
-    if (forward_speed != 0){
-
-        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
-        entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
-    }
-
-    if (side_speed != 0){
-
-        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
-        entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
-    }
-}
-
-  
-/*==============================
-    rad & deg
-    convert angles to radians
-==============================*/
-
-float rad(float angle){
-	float radian = M_PI / 180 * angle;
-	return radian;
-}
-
-float deg(float rad){
-	float angle = 180 / M_PI * rad;
-	return angle;
-}
-
-
- /* 
-     Nintendo's official button names 
-    U_JPAD
-    L_JPAD
-    R_JPAD
-    D_JPAD
-    START_BUTTON
-    A_BUTTON
-    B_BUTTON
-    U_CBUTTONS
-    L_CBUTTONS
-    R_CBUTTONS
-    D_CBUTTONS
-    L_TRIG
-    R_TRIG
-    Z_TRIG
-*/
 
 
 /*==============================
     handle_camera_cbuttons
-    handles pitch and distance_from_entity 
+    handles pitch, distance_from_entity 
     and angle_around_entity variables
 ==============================*/
 
@@ -321,6 +272,37 @@ void handle_camera_cbuttons(Camera *camera, NUContData cont[1]){
 
     if (camera->angle_around_entity == 360){
         camera->angle_around_entity = 0;
+    }
+}
+
+
+/*==============================
+    move_entity_cbuttons
+    Moves entity with c buttons
+==============================*/
+
+void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
+
+    forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
+    side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
+
+	if (forward_speed != 0 || side_speed != 0) {
+    	entity->yaw = deg(atan2(-side_speed, -forward_speed) - rad(camera->angle_around_entity));
+    }
+
+    float frame_distance_forward = time_data.frame_duration * forward_speed * 500;
+    float frame_distance_side = time_data.frame_duration * side_speed * 500;
+
+    if (forward_speed != 0){
+
+        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
+        entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
+    }
+
+    if (side_speed != 0){
+
+        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
+        entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
     }
 }
 
@@ -384,9 +366,7 @@ void get_cam_position(Camera *camera, Entity entity){
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
     //handle_camera_cbuttons(camera, cont);
-    //handle_angle_around_entity(camera, cont);
-    handle_camera_analog_stick
-(camera, cont);
+    handle_camera_analog_stick(camera, cont);
     get_distances(camera);
     get_cam_position(camera, entity);
 }
