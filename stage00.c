@@ -34,13 +34,16 @@ OSTime get_time();
 void time_management(TimeData time);
 
 void move_entity(Entity *entity, Camera camera, NUContData cont[1]);
-void move_entity_3rd_person_shooter(Entity *entity, Camera *camera, NUContData cont[]);
+int lim(u32 input);
+void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]);
 
 float rad(float angle);
 float deg(float rad);
 
-void handle_zoom(Camera *camera, NUContData cont[1]);
-void handle_angle_around_entity(Camera *camera, NUContData cont[1]);
+void handle_camera_cbuttons(Camera *camera, NUContData cont[1]);
+
+void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
+void get_distances(Camera *camera);
 void get_cam_position(Camera *camera, Entity entity);
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
 void set_light(LightData *light);
@@ -73,8 +76,8 @@ float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity: 700,
-    pitch: 40,
+    distance_from_entity: 900,
+    pitch: 30,
     angle_around_entity: 0,
 };
 
@@ -131,7 +134,7 @@ void stage00_init(void){
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
     // Set nick's animation speed based on region
-    #if TV_TYPE == PAL
+    #if TV_TYPE == PAL    
         animspeed = 0.66;
     #else
         animspeed = 0.5;
@@ -171,67 +174,10 @@ void time_managment(TimeData *time){
     time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
 }
 
-int lim(u32 input){
-    if (input == 0) {return 0;}
-    else {return 1;}
-}
-
-void move_entity_3rd_person_shooter(Entity *entity, Camera *camera, NUContData cont[1]){
-
-    forward_speed = (lim(contdata[0].button & D_CBUTTONS) - lim(contdata[0].button & U_CBUTTONS));
-    side_speed = (lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS));
-
-	if ( forward_speed != 0 || side_speed != 0) {
-    	entity->yaw = deg(atan2(-side_speed, forward_speed) - rad(camera->angle_around_entity));
-        //entity->speed = 1000;
-    }
-
-    float frame_distance_forward = time_data.frame_duration * forward_speed * 1000;
-    float frame_distance_side = time_data.frame_duration * side_speed * 1000;
-
-
-    if (forward_speed != 0){
-
-        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
-        entity->pos[1] -= frame_distance_forward * cos(rad(camera->angle_around_entity));
-    }
-
-    if (side_speed != 0){
-
-        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
-        entity->pos[1] -= frame_distance_side * cos(rad(camera->angle_around_entity - 90));
-    }
-
-    if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
-    if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
-
-    if (cam.yaw > 360) {cam.yaw = 0;}
-    if (cam.yaw < 0) {cam.yaw = 360;}
-
-
-    if ( cont->stick_x != 0 || cont->stick_y != 0) {
-        entity->yaw = deg(atan2(forward_speed, -cont->stick_y) - rad(camera->angle_around_entity));
-        entity->speed = 1.0f;
-    }
-
-    if ( cont->stick_x == 0 && cont->stick_y == 0) {
-        entity->speed = 0;
-    }
-
-    int side_frame_distance = time_data.frame_duration * side_speed;
-    int forward_frame_distance = time_data.frame_duration * forward_speed;
-
-    entity->pos[0] += side_frame_distance * sin(rad(camera->angle_around_entity));
-    entity->pos[1] -= side_frame_distance * cos(rad(camera->angle_around_entity));
-
-    entity->pos[0] += forward_frame_distance * sin(rad(camera->angle_around_entity));
-    entity->pos[1] -= forward_frame_distance * cos(rad(camera->angle_around_entity));
-}
-
 
 /*==============================
     move_entity
-    Moves entity with controller
+    Moves entity with analog stick
 ==============================*/
 
 void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
@@ -256,7 +202,50 @@ void move_entity(Entity *entity, Camera camera, NUContData cont[1]){
 
 }
 
-   
+
+/*==============================
+    lim
+    auxiliary function for c button movement1º
+==============================*/
+
+int lim(u32 input){
+    if (input == 0) {return 0;}
+    else {return 1;}
+}
+
+
+/*==============================
+    move_entity_cbuttons
+
+    Moves entity with c buttons
+==============================*/
+
+void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
+
+    forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
+    side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
+
+	if (forward_speed != 0 || side_speed != 0) {
+    	entity->yaw = deg(atan2(-side_speed, -forward_speed) - rad(camera->angle_around_entity));
+    }
+
+    float frame_distance_forward = time_data.frame_duration * forward_speed * 500;
+    float frame_distance_side = time_data.frame_duration * side_speed * 500;
+
+    if (forward_speed != 0){
+
+        entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
+        entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
+    }
+
+    if (side_speed != 0){
+
+        entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
+        entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
+    }
+}
+
+  
 /*==============================
     rad & deg
     convert angles to radians
@@ -291,12 +280,14 @@ float deg(float rad){
     Z_TRIG
 */
 
+
 /*==============================
-    handle_zoom
-    handles pitch and distance_from_entity variables
+    handle_camera_cbuttons
+    handles pitch and distance_from_entity 
+    and angle_around_entity variables
 ==============================*/
 
-void handle_zoom(Camera *camera, NUContData cont[1]){
+void handle_camera_cbuttons(Camera *camera, NUContData cont[1]){
 
     if (cont[0].trigger & U_CBUTTONS && camera->distance_from_entity == 2000){
         camera->distance_from_entity = 1200;
@@ -315,15 +306,6 @@ void handle_zoom(Camera *camera, NUContData cont[1]){
         camera->distance_from_entity = 2000;
         camera->pitch = 40;
     }
-}
-
-
-/*==============================
-    handle_angle_around_entity
-    handles angle_around_entity variable
-==============================*/
-
-void handle_angle_around_entity(Camera *camera, NUContData cont[1]){
 
     if (cont[0].trigger & L_CBUTTONS){
         camera->angle_around_entity += 45;
@@ -340,6 +322,31 @@ void handle_angle_around_entity(Camera *camera, NUContData cont[1]){
     if (camera->angle_around_entity == 360){
         camera->angle_around_entity = 0;
     }
+}
+
+
+/*==============================
+    handle_camera_analog_stick
+
+    moves camera with analog stick
+==============================*/
+
+void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
+
+    if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
+    if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
+
+    camera->angle_around_entity += cont->stick_x / 50;
+    camera->pitch += cont->stick_y / 50;
+
+    if (cam.angle_around_entity > 360) {cam.angle_around_entity  = 0;}
+    if (cam.angle_around_entity < 0) {cam.angle_around_entity  = 360;}
+
+    if (cam.angle_around_entity  > 360) {cam.angle_around_entity  = 0;}
+    if (cam.angle_around_entity  < 0) {cam.angle_around_entity  = 360;}
+
+    if (cam.pitch > 80) {cam.pitch = 80;}
+    if (cam.pitch < -80) {cam.pitch = -80;}
 }
 
 
@@ -376,8 +383,10 @@ void get_cam_position(Camera *camera, Entity entity){
 
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
-    //handle_zoom(camera, cont);
+    //handle_camera_cbuttons(camera, cont);
     //handle_angle_around_entity(camera, cont);
+    handle_camera_analog_stick
+(camera, cont);
     get_distances(camera);
     get_cam_position(camera, entity);
 }
@@ -431,7 +440,7 @@ void set_cam(Camera *camera, Entity entity){
     guLookAt(
     	&camera->viewpoint,
     	camera->pos[0], camera->pos[1], camera->pos[2],
-    	entity.pos[0], entity.pos[1], entity.pos[2],
+    	entity.pos[0], entity.pos[1], entity.pos[2] + 120,
     	0, 0, 1
   	);
 
@@ -460,12 +469,18 @@ void animate_nick(NUContData cont[1]){
     if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
-	
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+
+    if (((forward_speed != 0 || side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
     }
-    
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
+
+    /*
+    } if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    }
+    */
+   
+    if (((forward_speed == 0 && side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
     
@@ -618,9 +633,9 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %d", (int) (time_data.frame_duration * 10000));
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "forward_speed %d", forward_speed);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam angle around entity %d", (int)cam.angle_around_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "side_speed %d", side_speed);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
     
     /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
@@ -659,7 +674,8 @@ void stage00_update(void){
 
     //handle movement
     //move_entity(&nick.entity, cam, contdata);
-    move_entity_3rd_person_shooter(&nick.entity, &cam, contdata);
+    move_entity_cbuttons
+(&nick.entity, &cam, contdata);
 
     //move_entity(&willy.entity, cam, contdata);
 
