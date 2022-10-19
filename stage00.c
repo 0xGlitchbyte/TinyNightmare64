@@ -147,17 +147,21 @@ OSTime get_time(){
 void time_managment(TimeData *time){
 
     time->cur_frame = osGetTime();
-    time->last_frame = time->frame_times[time->cur_frame_index];
+    if (time->cur_frame_index == 0) {
+        time->last_frame = time->frame_times[FRAMETIME_COUNT - 1];
+    } else {
+        time->last_frame = time->frame_times[time->cur_frame_index];
+    }
+    time->cur_frame_index++;
     
     time->frame_times[time->cur_frame_index] = time->cur_frame;
 
-    time->cur_frame_index++;
 
     if (time->cur_frame_index >= FRAMETIME_COUNT) {
         time->cur_frame_index = 0;
     }
 
-    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 1000000;
+    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 2000;
 
     time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
 }
@@ -548,15 +552,17 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
 
 void draw_debug_data(){
 
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %llu", time_data.frame_duration);
-    /*
+
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam distance %d", (int)cam.distance_from_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time->cur_frame %llu", (int) time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "pitch %d", (int)cam.pitch);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time->last_frame %llu", (int) time_data.last_frame);
+    
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "angle around player %d", (int)cam.angle_around_entity);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "diff %llu", time_data.cur_frame - time_data.last_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "horizontal distance %d", (int)cam.horizontal_distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 6);
