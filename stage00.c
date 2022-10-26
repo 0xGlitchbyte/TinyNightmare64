@@ -25,22 +25,23 @@
 *********************************/
 
 #define USB_BUFFER_SIZE 256
+#define COS_45 0.7071
 
 /*********************************
         Function Prototypes
 *********************************/
 
-OSTime get_time();
+float get_time();
 float rad(float angle);
 float deg(float rad);
 int lim(u32 input);
 
-void time_management(TimeData time);
+void time_management(TimeData *time);
 
 void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1]);
-void handle_camera_cbuttons(Camera *camera, NUContData cont[1]);
+void handle_camera_c_buttons(Camera *camera, NUContData cont[1]);
 
-void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]);
+void move_entity_c_buttons(Entity *entity, Camera camera, NUContData cont[1]);
 void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
 
 void get_cam_position(Camera *camera, Entity entity);
@@ -66,13 +67,13 @@ void draw_debug_data();
 
 //Variables
 TimeData time_data = {
-    cur_frame_index: 0,
+    FPS_index: 0,
 };
 float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity: 900,
+    distance_from_entity: 700,
     pitch: 30,
     angle_around_entity: 0,
 };
@@ -103,7 +104,9 @@ Mtx willyMtx[MESHCOUNT_willy];
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
-    }
+        
+    },
+    mesh: gfx_axis,
 };
 
 
@@ -115,39 +118,31 @@ static char usb_buffer[USB_BUFFER_SIZE];
 
 
 /*==============================
-    stage00_init
-    Initialize the stage
+    get_time
+    returns time in seconds
 ==============================*/
 
-void stage00_init(void){
-    // Initialize entities
-    sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
-    sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
-    sausage64_set_animcallback(&nick.helper, nick_animcallback);
+float get_time(){
 
-    sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
-    sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
-    sausage64_set_animcallback(&willy.helper, willy_animcallback);
-    
-    // Set nick's animation speed based on region
-    #if TV_TYPE == PAL    
-        animspeed = 0.66;
-    #else
-        animspeed = 0.5;
-    #endif
+    float time = (s32)OS_CYCLES_TO_USEC(osGetTime()) / 1000000.0f;
+    return time;
 }
 
+/*==============================
+    cycles_to_sec
+    converts cycles to seconds
+==============================*/
 
-OSTime get_time(){
+float cycles_to_sec(OSTime cycles){
 
-    OSTime time = (s32)OS_CYCLES_TO_USEC(osGetTime()) / 1000000;
+    float time = (s32)OS_CYCLES_TO_USEC(cycles) / 1000000.0f;
     return time;
 }
 
   
 /*==============================
     rad & deg
-    convert angles to radians
+    convert between angles and radians
 ==============================*/
 
 float rad(float angle){
@@ -163,7 +158,7 @@ float deg(float rad){
 
 /*==============================
     lim
-    auxiliary function for c button movement1º
+    auxiliary function for 8 directional movement
 ==============================*/
 
 int lim(u32 input){
@@ -173,30 +168,20 @@ int lim(u32 input){
 
 
 /*==============================
-    time_managment
+    time_management
     calculates FPS and frame_duration variable    
 ==============================*/
 
-void time_managment(TimeData *time){
+void time_management(TimeData *time){
 
     time->cur_frame = osGetTime();
-    if (time->cur_frame_index == 0) {
-        time->last_frame = time->frame_times[FRAMETIME_COUNT - 1];
-    } else {
-        time->last_frame = time->frame_times[time->cur_frame_index];
-    }
-    time->cur_frame_index++;
 
-    time->frame_times[time->cur_frame_index] = time->cur_frame;
+    time->frame_duration = cycles_to_sec(time->cur_frame - time->last_frame);
 
+    time->FPS = 1 / time->frame_duration;
 
-    if (time->cur_frame_index >= FRAMETIME_COUNT) {
-        time->cur_frame_index = 0;
-    }
+    time->last_frame = time->cur_frame;
 
-    time->frame_duration = OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame) / 1000000.0f;
-
-    time->FPS = ((f32)FRAMETIME_COUNT * 1000000.0f) / (s32)OS_CYCLES_TO_USEC(time->cur_frame - time->last_frame);
 }
 
 
@@ -213,7 +198,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 1000;
+        entity->speed = 500;
     }
 
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
@@ -228,12 +213,12 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 
 
 /*==============================
-    handle_camera_cbuttons
+    handle_camera_c_buttons
     handles pitch, distance_from_entity 
     and angle_around_entity variables
 ==============================*/
 
-void handle_camera_cbuttons(Camera *camera, NUContData cont[1]){
+void handle_camera_c_buttons(Camera *camera, NUContData cont[1]){
 
     if (cont[0].trigger & U_CBUTTONS && camera->distance_from_entity == 2000){
         camera->distance_from_entity = 1200;
@@ -272,34 +257,34 @@ void handle_camera_cbuttons(Camera *camera, NUContData cont[1]){
 
 
 /*==============================
-    move_entity_cbuttons
+    move_entity_c_buttons
     Moves entity with c buttons
 ==============================*/
 
-void move_entity_cbuttons(Entity *entity, Camera *camera, NUContData cont[1]){
+void move_entity_c_buttons(Entity *entity, Camera camera, NUContData cont[1]){
 
     entity->forward_speed = lim(contdata[0].button & U_CBUTTONS) - lim(contdata[0].button & D_CBUTTONS);
     entity->side_speed = lim(contdata[0].button & L_CBUTTONS) - lim(contdata[0].button & R_CBUTTONS);
 
 	if (entity->forward_speed != 0 || entity->side_speed != 0) {
-    	entity->yaw = deg(atan2(-entity->side_speed, -entity->forward_speed) - rad(camera->angle_around_entity));
+    	entity->yaw = deg(atan2(-entity->side_speed, -entity->forward_speed) - rad(camera.angle_around_entity));
     }
 
     if (entity->forward_speed != 0 && entity->side_speed != 0){
 
-        entity->forward_speed = entity->forward_speed * 0.70;
-        entity->side_speed = entity->side_speed * 0.70;
+        entity->forward_speed = entity->forward_speed * COS_45;
+        entity->side_speed = entity->side_speed * COS_45;
     }
 
     float frame_distance_forward = time_data.frame_duration * entity->forward_speed * 500;
     float frame_distance_side = time_data.frame_duration * entity->side_speed * 500;
 
 
-    entity->pos[0] += frame_distance_forward * sin(rad(camera->angle_around_entity));
-    entity->pos[1] += frame_distance_forward * cos(rad(camera->angle_around_entity));
+    entity->pos[0] += frame_distance_forward * sin(rad(camera.angle_around_entity));
+    entity->pos[1] += frame_distance_forward * cos(rad(camera.angle_around_entity));
 
-    entity->pos[0] += frame_distance_side * sin(rad(camera->angle_around_entity - 90));
-    entity->pos[1] += frame_distance_side * cos(rad(camera->angle_around_entity - 90));
+    entity->pos[0] += frame_distance_side * sin(rad(camera.angle_around_entity - 90));
+    entity->pos[1] += frame_distance_side * cos(rad(camera.angle_around_entity - 90));
 }
 
 
@@ -322,8 +307,8 @@ void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
     if (cam.angle_around_entity  > 360) {cam.angle_around_entity  = 0;}
     if (cam.angle_around_entity  < 0) {cam.angle_around_entity  = 360;}
 
-    if (cam.pitch > 80) {cam.pitch = 80;}
-    if (cam.pitch < -80) {cam.pitch = -80;}
+    if (cam.pitch > 85) {cam.pitch = 85;}
+    if (cam.pitch < -85) {cam.pitch = -85;}
 }
 
 
@@ -340,6 +325,8 @@ void get_cam_position(Camera *camera, Entity entity){
     camera->pos[0] = entity.pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
     camera->pos[1] = entity.pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
     camera->pos[2] = camera->vertical_distance_from_entity + entity.pos[2];
+
+    if ((camera->vertical_distance_from_entity + entity.pos[2]) < 5){cam.pos[2] = 5;}
 }
 
 
@@ -350,8 +337,8 @@ void get_cam_position(Camera *camera, Entity entity){
 
 void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
 
-    //handle_camera_cbuttons(camera, cont);
-    handle_camera_analog_stick(camera, cont);
+    handle_camera_c_buttons(camera, cont);
+    //handle_camera_analog_stick(camera, cont);
     get_cam_position(camera, entity);
 }
 
@@ -426,28 +413,32 @@ void set_cam(Camera *camera, Entity entity){
 
 void animate_nick(NUContData cont[1]){
 
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_jumpUP);
+    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
     }
 
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
+    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
 
-    if (((nick.entity.forward_speed != 0 || nick.entity.side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_walk  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
+    }
+
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump) {
+        sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
 
     /*
-    } if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_run  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP){
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    if (((nick.entity.forward_speed != 0 || nick.entity.side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_walk  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
     }
-    */
+
    
-    if (((nick.entity.forward_speed == 0 && nick.entity.side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jumpUP) {
+    if (((nick.entity.forward_speed == 0 && nick.entity.side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
-    
+    */
 }
 
 
@@ -482,7 +473,7 @@ void nick_animcallback(u16 anim){
     switch(anim)
     {
         case ANIMATION_nick_roll:
-        case ANIMATION_nick_jumpUP:
+        case ANIMATION_nick_jump:
             sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
             break;
     }
@@ -508,14 +499,13 @@ void willy_animcallback(u16 anim)
 
 void draw_animated_entity(AnimatedEntity *animated_entity){
 
-    Entity *entity = &animated_entity->entity;
-    guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
-    guRotate(&entity->rot_mtx[0], entity->pitch, 1, 0, 0);
-    guRotate(&entity->rot_mtx[1], entity->yaw, 0, 0, 1);
+    guTranslate(&animated_entity->entity.pos_mtx, animated_entity->entity.pos[0], animated_entity->entity.pos[1], animated_entity->entity.pos[2]);
+    guRotate(&animated_entity->entity.rot_mtx[0], animated_entity->entity.pitch, 1, 0, 0);
+    guRotate(&animated_entity->entity.rot_mtx[1], animated_entity->entity.yaw, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
 
     sausage64_drawmodel(&glistp, &animated_entity->helper);
 }
@@ -527,18 +517,16 @@ void draw_animated_entity(AnimatedEntity *animated_entity){
 ==============================*/
 
 void draw_static_entity(StaticEntity *static_entity){
-    
-    Entity *entity = &static_entity->entity;
 
-    guTranslate(&entity->pos_mtx, entity->pos[0], entity->pos[1], entity->pos[2]);
-    guRotate(&entity->rot_mtx[0], 0, 1, 0, 0);
-    guRotate(&entity->rot_mtx[1], 0, 0, 0, 1);
+    guTranslate(&static_entity->entity.pos_mtx, static_entity->entity.pos[0], static_entity->entity.pos[1], static_entity->entity.pos[2]);
+    guRotate(&static_entity->entity.rot_mtx[0], 0, 1, 0, 0);
+    guRotate(&static_entity->entity.rot_mtx[1], 0, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&entity->rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
     
-    gSPDisplayList(glistp++, gfx_axis);
+    gSPDisplayList(glistp++, static_entity->mesh);
 }
 
 
@@ -594,14 +582,14 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
 void draw_debug_data(){
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "frame duration %d", (int) (time_data.frame_duration * 10000));
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam angle around entity %d", (int)cam.angle_around_entity);
-    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time %d", (int)get_time());
     
     /*
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "diff %llu", time_data.cur_frame - time_data.last_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
@@ -621,6 +609,30 @@ void draw_debug_data(){
 
 
 /*==============================
+    stage00_init
+    Initialize the stage
+==============================*/
+
+void stage00_init(void){
+    // Initialize entities
+    sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
+    sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
+    sausage64_set_animcallback(&nick.helper, nick_animcallback);
+
+    sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
+    sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
+    sausage64_set_animcallback(&willy.helper, willy_animcallback);
+    
+    // Set nick's animation speed based on region
+    #if TV_TYPE == PAL    
+        animspeed = 0.66;
+    #else
+        animspeed = 0.5;
+    #endif
+}
+
+
+/*==============================
     stage00_update
     Update stage variables every frame
 ==============================*/
@@ -631,17 +643,14 @@ void stage00_update(void){
     debug_pollcommands();  
 
     //alculate fps
-    time_managment(&time_data);
+    time_management(&time_data);
 
     // Read the controller
     nuContDataGetEx(contdata, 0);
 
     //handle movement
-    //move_entity(&nick.entity, cam, contdata);
-    move_entity_cbuttons
-(&nick.entity, &cam, contdata);
-
-    //move_entity(&willy.entity, cam, contdata);
+    move_entity_analog_stick(&nick.entity, cam, contdata);
+    //move_entity_c_buttons(&nick.entity, cam, contdata);
 
     move_cam(&cam, nick.entity, contdata);
 

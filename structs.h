@@ -6,12 +6,12 @@
 #define STRUCTS_H
 
 typedef struct{
-	OSTime frame_times[FRAMETIME_COUNT];
 	OSTime cur_frame;
 	OSTime last_frame;
 	float frame_duration;
-	u8 cur_frame_index;
 	f32 FPS;
+	u8 FPS_index;
+	f32 FPS_average[10];
 }TimeData;
 
 typedef struct{
