@@ -73,7 +73,7 @@ float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity: 700,
+    distance_from_entity: 2000,
     pitch: 30,
     angle_around_entity: 0,
 };
@@ -217,7 +217,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 8;
+        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 12;
     }
 
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
@@ -444,22 +444,37 @@ void animate_nick(NUContData cont[1]){
     int curr_state = sausage64_get_currentanim(&nick.helper);
     if (cont[0].trigger & A_BUTTON && 
             (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk )) {
+              || curr_state == ANIMATION_nick_walk 
+              || curr_state == ANIMATION_nick_run )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
-        nick.entity.vertical_speed = 2000;
+        nick.entity.vertical_speed = 1500;
     }
 
     if (cont[0].trigger & B_BUTTON && 
             (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk )) {
+              || curr_state == ANIMATION_nick_walk
+              || curr_state == ANIMATION_nick_run )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
 
     if (((cont->stick_x != 0 || cont->stick_y != 0) && curr_state == ANIMATION_nick_idle)) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
     }
+    if (nick.entity.speed > 500 && 
+            (    curr_state != ANIMATION_nick_run
+              && curr_state != ANIMATION_nick_roll
+              && curr_state != ANIMATION_nick_jump
+              && curr_state != ANIMATION_nick_fall
+              && curr_state != ANIMATION_nick_midair
+            )) {
+    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
+    }
 
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && curr_state == ANIMATION_nick_walk)) {
+
+    if ((cont->stick_x == 0 && cont->stick_y == 0) && 
+            (    curr_state == ANIMATION_nick_walk
+              || curr_state == ANIMATION_nick_run
+            )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
 
