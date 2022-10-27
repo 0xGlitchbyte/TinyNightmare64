@@ -184,6 +184,25 @@ void time_management(TimeData *time){
 
 }
 
+// https://en.wikipedia.org/wiki/Fast_inverse_square_root
+float Q_rsqrt( float number )
+{
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}
+
+
 
 /*==============================
     move_entity
@@ -198,7 +217,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 500;
+        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 4;
     }
 
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
@@ -210,7 +229,6 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     entity->pos[0] += frame_distance * sin(rad(entity->yaw));
     entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
 }
-
 
 /*==============================
     handle_camera_c_buttons
@@ -413,19 +431,24 @@ void set_cam(Camera *camera, Entity entity){
 
 void animate_nick(NUContData cont[1]){
 
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+    int curr_state = sausage64_get_currentanim(&nick.helper);
+    if (cont[0].trigger & A_BUTTON && 
+            (    curr_state == ANIMATION_nick_idle
+              || curr_state == ANIMATION_nick_walk )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
     }
 
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+    if (cont[0].trigger & B_BUTTON && 
+            (    curr_state == ANIMATION_nick_idle
+              || curr_state == ANIMATION_nick_walk )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
     }
 
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_walk  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
+    if (((cont->stick_x != 0 || cont->stick_y != 0) && curr_state == ANIMATION_nick_idle)) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
     }
 
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump) {
+    if (((cont->stick_x == 0 && cont->stick_y == 0) && curr_state == ANIMATION_nick_walk)) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
 
@@ -472,8 +495,16 @@ void nick_animcallback(u16 anim){
     // Go to idle animation when we finished attacking
     switch(anim)
     {
-        case ANIMATION_nick_roll:
         case ANIMATION_nick_jump:
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_midair);
+            break;
+        case ANIMATION_nick_midair:
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_fall);
+            break;
+        case ANIMATION_nick_fall:
+            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
+            break;
+        case ANIMATION_nick_roll:
             sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
             break;
     }
