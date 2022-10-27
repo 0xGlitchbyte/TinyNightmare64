@@ -217,7 +217,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 
 	if ( cont->stick_x != 0 || cont->stick_y != 0) {
     	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 4;
+        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 8;
     }
 
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
@@ -228,7 +228,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
-        entity->vertical_speed -= 100;
+        entity->vertical_speed -= 50;
         entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
@@ -352,7 +352,7 @@ void get_cam_position(Camera *camera, Entity entity){
 
     camera->pos[0] = entity.pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
     camera->pos[1] = entity.pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
-    camera->pos[2] = camera->vertical_distance_from_entity + entity.pos[2];
+    camera->pos[2] = camera->vertical_distance_from_entity + 1/Q_rsqrt(entity.pos[2]);
 
     if ((camera->vertical_distance_from_entity + entity.pos[2]) < 5){cam.pos[2] = 5;}
 }
@@ -419,7 +419,7 @@ void set_cam(Camera *camera, Entity entity){
     guLookAt(
     	&camera->viewpoint,
     	camera->pos[0], camera->pos[1], camera->pos[2],
-    	entity.pos[0], entity.pos[1], entity.pos[2] + 120,
+    	entity.pos[0], entity.pos[1], 1/Q_rsqrt(entity.pos[2]) + 120,
     	0, 0, 1
   	);
 
@@ -446,7 +446,7 @@ void animate_nick(NUContData cont[1]){
             (    curr_state == ANIMATION_nick_idle
               || curr_state == ANIMATION_nick_walk )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
-        nick.entity.vertical_speed = 3000;
+        nick.entity.vertical_speed = 2000;
     }
 
     if (cont[0].trigger & B_BUTTON && 
