@@ -49,6 +49,7 @@ typedef struct {
 	float pitch;
 	float yaw;
 	float speed;
+	float vertical_speed;
 	float forward_speed;
 	float side_speed;
 	

@@ -223,8 +223,18 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     if ( cont->stick_x == 0 && cont->stick_y == 0) {
         entity->speed = 0;
     }
-    
+
     float frame_distance = time_data.frame_duration * entity->speed;
+    
+    // apply some gravity
+    if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
+        entity->vertical_speed -= 100;
+        entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
+        if (entity->pos[2] < 0) {
+            entity->vertical_speed = 0;
+            entity->pos[2] = 0;
+        }
+    } 
 
     entity->pos[0] += frame_distance * sin(rad(entity->yaw));
     entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
@@ -436,6 +446,7 @@ void animate_nick(NUContData cont[1]){
             (    curr_state == ANIMATION_nick_idle
               || curr_state == ANIMATION_nick_walk )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
+        nick.entity.vertical_speed = 3000;
     }
 
     if (cont[0].trigger & B_BUTTON && 
