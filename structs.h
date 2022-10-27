@@ -5,38 +5,59 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+typedef struct{
+	OSTime cur_frame;
+	OSTime last_frame;
+	float frame_duration;
+	f32 FPS;
+	u8 FPS_index;
+	f32 FPS_average[10];
+}TimeData;
 
-typedef struct {    
+typedef struct{
+    Light amb;
+    Light dir;
+	float angle[3];
+	int ambcol;
+}LightData;
+
+typedef struct {
 	Mtx modeling;
 	Mtx projection;
 	Mtx viewpoint;
 	Mtx camRot;
 	u16 normal;
+
+	float distance_from_entity;
+	float horizontal_distance_from_entity;
+	float vertical_distance_from_entity;
+    float angle_around_entity;
+
 	float pos[3];
 	float pitch;
 	float yaw;
-	float camang[3];
+	float roll;
 } Camera;
-
 
 typedef struct {
 	Mtx	pos_mtx;
-	Mtx	rotx;
-	Mtx roty;
-	Mtx rotz;
+	Mtx	rot_mtx[3];
 	Mtx scale;
+	float size[3];
 	float pos[3];
 	float dir[3];
 	float pitch;
 	float yaw;
-	float size[3];
 	float speed;
+	float vertical_speed;
+	float forward_speed;
+	float side_speed;
+	
 } Entity;
 
 
 typedef struct {
 	Entity entity;
-	float animspeed;
 	s64ModelHelper helper;
 } AnimatedEntity;
 
