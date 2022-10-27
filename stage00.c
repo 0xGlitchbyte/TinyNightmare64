@@ -214,14 +214,16 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
+    int curr_state = sausage64_get_currentanim(&nick.helper);
+    if (curr_state != ANIMATION_nick_roll) {
+        if ((cont->stick_x != 0 || cont->stick_y != 0)) {
+            entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
+            entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 12;
+        }
 
-	if ( cont->stick_x != 0 || cont->stick_y != 0) {
-    	entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
-        entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 12;
-    }
-
-    if ( cont->stick_x == 0 && cont->stick_y == 0) {
-        entity->speed = 0;
+        if ( cont->stick_x == 0 && cont->stick_y == 0) {
+            entity->speed = 0;
+        }
     }
 
     float frame_distance = time_data.frame_duration * entity->speed;
@@ -455,12 +457,13 @@ void animate_nick(NUContData cont[1]){
               || curr_state == ANIMATION_nick_walk
               || curr_state == ANIMATION_nick_run )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
+        nick.entity.speed = 800;
     }
 
     if (((cont->stick_x != 0 || cont->stick_y != 0) && curr_state == ANIMATION_nick_idle)) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
     }
-    if (nick.entity.speed > 500 && 
+    if (nick.entity.speed > 900 && 
             (    curr_state != ANIMATION_nick_run
               && curr_state != ANIMATION_nick_roll
               && curr_state != ANIMATION_nick_jump
@@ -469,7 +472,6 @@ void animate_nick(NUContData cont[1]){
             )) {
     	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
     }
-
 
     if ((cont->stick_x == 0 && cont->stick_y == 0) && 
             (    curr_state == ANIMATION_nick_walk
@@ -532,6 +534,7 @@ void nick_animcallback(u16 anim){
             break;
         case ANIMATION_nick_roll:
             sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
+            nick.entity.speed = 0;
             break;
     }
 }
