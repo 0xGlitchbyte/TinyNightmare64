@@ -16,6 +16,7 @@
 #include "palette.h"
 #include "nick.h"
 #include "willy.h"
+#include "ground_block.h"
 #include "axisMdl.h"
 #include "debug.h"
 
@@ -109,6 +110,12 @@ StaticEntity axis = {
     mesh: gfx_axis,
 };
 
+StaticEntity ground = {
+    entity: {
+        pos: { -500, 500, 0},
+    },
+    mesh: gfx_ground,
+};
 
 // USB
 static char uselight = TRUE;
@@ -619,11 +626,13 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
 
     //draw the entities
     draw_static_entity(&axis);
+    draw_static_entity(&ground);
 
     draw_animated_entity(&nick);
 
     draw_animated_entity(&willy);
-    
+
+
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
@@ -674,6 +683,7 @@ void draw_debug_data(){
 ==============================*/
 
 void stage00_init(void){
+
     // Initialize entities
     sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
     sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
