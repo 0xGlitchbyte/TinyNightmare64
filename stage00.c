@@ -51,8 +51,8 @@ void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
 
+void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state);
 void animate_nick(NUContData cont[1]);
-void animate_willy(NUContData cont[1]);
 void nick_animcallback(u16 anim);
 void willy_animcallback(u16 anim);
 
@@ -241,11 +241,12 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
-        entity->vertical_speed -= 13;
+        entity->vertical_speed -= 14;
         entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
             entity->pos[2] = 0;
+            set_entity_state(&nick, IDLE);
         }
     } 
 
@@ -446,69 +447,120 @@ void set_cam(Camera *camera, Entity entity){
     gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
 }
 
+void update_animation_based_on_state(AnimatedEntity * animated_entity) {
+    entity_state new_state = animated_entity->entity.state;
+    if (animated_entity->entity.type == NICK) {
+        s64ModelHelper* helper = &animated_entity->helper;
+        if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_nick_jump);
+        if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_nick_roll);
+        if (new_state == FALL) sausage64_set_anim(helper, ANIMATION_nick_fall);
+        if (new_state == MIDAIR) sausage64_set_anim(helper, ANIMATION_nick_midair);
+        if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_nick_idle);
+        if (new_state == WALK) sausage64_set_anim(helper, ANIMATION_nick_walk);
+        if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_nick_run);
+    }
+}
+
+void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) {
+
+    Entity * entity = &animated_entity->entity;
+    int curr_state = entity->state;
+
+    if (curr_state == new_state) {
+        return;
+    }
+
+    if (new_state == JUMP && 
+            (    curr_state == IDLE 
+              || curr_state == WALK 
+              || curr_state == RUN)) {
+        update_animation_based_on_state(animated_entity);
+        nick.entity.vertical_speed = 600;
+        entity->state = new_state;
+    }
+
+    if (new_state == ROLL && 
+            (    curr_state == IDLE 
+              || curr_state == WALK 
+              || curr_state == RUN )) {
+        update_animation_based_on_state(animated_entity);
+        nick.entity.speed = 800;
+        entity->state = new_state;
+    }
+
+    if (new_state == WALK && curr_state == IDLE) {
+        update_animation_based_on_state(animated_entity);
+        entity->state = new_state;
+    }
+    if (new_state == RUN && 
+            ( curr_state == IDLE || curr_state == WALK )) {
+        update_animation_based_on_state(animated_entity);
+        entity->state = new_state;
+    }
+
+    if (new_state == IDLE
+        && (     curr_state == WALK 
+              || curr_state == RUN 
+              || curr_state == ROLL 
+              || curr_state == FALL 
+            )
+            ) {
+        update_animation_based_on_state(animated_entity);
+        entity->state = new_state;
+    }
+
+    if (new_state == MIDAIR) {
+        update_animation_based_on_state(animated_entity);
+        entity->state = new_state;
+    }
+
+    if (new_state == FALL) {
+        update_animation_based_on_state(animated_entity);
+        entity->state = new_state;
+    }
+}
 
 /*==============================
     animate_nick & animate_willy
     link entity animations to controller input
 ==============================*/
 
-void animate_nick(NUContData cont[1]){
-
-    int curr_state = sausage64_get_currentanim(&nick.helper);
-    if (cont[0].trigger & A_BUTTON && 
-            (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk 
-              || curr_state == ANIMATION_nick_run )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
-        nick.entity.vertical_speed = 600;
+void handle_controller_input(NUContData cont[1]){
+    if (cont[0].trigger & A_BUTTON) set_entity_state(&nick, JUMP);
+    if (cont[0].trigger & B_BUTTON) set_entity_state(&nick, ROLL);
+    if (cont->stick_x != 0 || cont->stick_y != 0) {
+        set_entity_state(&nick, WALK);
     }
-
-    if (cont[0].trigger & B_BUTTON && 
-            (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk
-              || curr_state == ANIMATION_nick_run )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
-        nick.entity.speed = 800;
-    }
-
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && curr_state == ANIMATION_nick_idle)) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
-    }
-    if (nick.entity.speed > 900 && 
-            (    curr_state != ANIMATION_nick_run
-              && curr_state != ANIMATION_nick_roll
-              && curr_state != ANIMATION_nick_jump
-              && curr_state != ANIMATION_nick_fall
-              && curr_state != ANIMATION_nick_midair
-            )) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
-    }
-
-    if ((cont->stick_x == 0 && cont->stick_y == 0) && 
-            (    curr_state == ANIMATION_nick_walk
-              || curr_state == ANIMATION_nick_run
-            )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
+    if (nick.entity.speed > 900) set_entity_state(&nick, RUN);
+    if (cont->stick_x == 0 && cont->stick_y == 0
+        && nick.entity.state != ROLL
+        && nick.entity.state != FALL 
+        && nick.entity.state != MIDAIR 
+        ) {
+        set_entity_state(&nick, IDLE);
     }
 }
 
-
-void animate_willy(NUContData cont[1]){
-
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_jump);
-    }
-
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_roll);
-    }
-	
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_run  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
-    }
-    
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_idle  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump) {
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+void when_animation_completes(AnimatedEntity * animated_entity) {
+    // Go to idle animation when we finished attacking
+    switch(animated_entity->entity.state)
+    {
+        case JUMP:
+            set_entity_state(animated_entity, MIDAIR);
+            break;
+        case MIDAIR:
+            set_entity_state(animated_entity, FALL);
+            break;
+        case FALL:
+            set_entity_state(animated_entity, IDLE);
+            break;
+        case RUN:
+            set_entity_state(animated_entity, IDLE);
+            break;
+        case ROLL:
+            set_entity_state(animated_entity, IDLE);
+            nick.entity.speed = 0;
+            break;
     }
 }
 
@@ -519,36 +571,15 @@ void animate_willy(NUContData cont[1]){
 ==============================*/
 
 void nick_animcallback(u16 anim){
-
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_nick_jump:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_midair);
-            break;
-        case ANIMATION_nick_midair:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_fall);
-            break;
-        case ANIMATION_nick_fall:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-            break;
-        case ANIMATION_nick_roll:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-            nick.entity.speed = 0;
-            break;
-    }
+    // yes this currently ignores the passed in animation, might not be bad to verify we are finishing
+    // the animation we are expecting, but this way the logic for where we go when transitioning out of
+    // a given state can be shared across different animated entities, that can do some subset, of move/roll/run/etc.
+    when_animation_completes(&nick);
 }
 
 void willy_animcallback(u16 anim)
 {
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_willy_roll:
-        case ANIMATION_willy_jump:
-            //sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
-            break;
-    }
+    when_animation_completes(&willy);
 }
 
 
@@ -683,6 +714,7 @@ void stage00_init(void){
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
+    willy.entity.state = RUN;
     sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
@@ -693,7 +725,6 @@ void stage00_init(void){
         animspeed = 0.5;
     #endif
 }
-
 
 /*==============================
     stage00_update
@@ -718,7 +749,7 @@ void stage00_update(void){
     move_cam(&cam, nick.entity, contdata);
 
     //Handle animation
-    animate_nick(contdata);
+    handle_controller_input(contdata);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
