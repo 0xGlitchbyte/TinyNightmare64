@@ -222,7 +222,11 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
     int curr_state = sausage64_get_currentanim(&nick.helper);
-    if (curr_state != ANIMATION_nick_roll) {
+    if (curr_state != ANIMATION_nick_roll
+        && curr_state != ANIMATION_nick_jump
+        && curr_state != ANIMATION_nick_fall
+        && curr_state != ANIMATION_nick_midair
+        ) {
         if ((cont->stick_x != 0 || cont->stick_y != 0)) {
             entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
             entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 12;
@@ -237,7 +241,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
-        entity->vertical_speed -= 50;
+        entity->vertical_speed -= 13;
         entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
@@ -456,7 +460,7 @@ void animate_nick(NUContData cont[1]){
               || curr_state == ANIMATION_nick_walk 
               || curr_state == ANIMATION_nick_run )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
-        nick.entity.vertical_speed = 1500;
+        nick.entity.vertical_speed = 600;
     }
 
     if (cont[0].trigger & B_BUTTON && 
@@ -486,17 +490,6 @@ void animate_nick(NUContData cont[1]){
             )) {
         sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
     }
-
-    /*
-    if (((nick.entity.forward_speed != 0 || nick.entity.side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_walk  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
-    }
-
-   
-    if (((nick.entity.forward_speed == 0 && nick.entity.side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-    }
-    */
 }
 
 
