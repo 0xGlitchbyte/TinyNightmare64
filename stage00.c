@@ -107,7 +107,6 @@ Mtx willyMtx[MESHCOUNT_willy];
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
-        
     },
     mesh: gfx_axis,
 };
@@ -241,7 +240,9 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
             entity->speed = 0;
         }
     }
+}
 
+void move_entity_one_frame(Entity *entity){
     float frame_distance = time_data.frame_duration * entity->speed;
     
     // apply some gravity
@@ -507,6 +508,8 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
             ( curr_state == IDLE || curr_state == WALK)) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
+        // TODO - just to make willy move, gets overriden by controller for user
+        animated_entity->entity.speed = 800;
     }
 
     if (new_state == IDLE
@@ -553,6 +556,12 @@ void handle_controller_input(NUContData cont[1]){
         ) {
         set_entity_state(&nick, IDLE);
     }
+
+    //handle movement
+    move_entity_analog_stick(&nick.entity, cam, contdata);
+    //move_entity_c_buttons(&nick.entity, cam, contdata);
+
+    move_cam(&cam, nick.entity, contdata);
 }
 
 void when_animation_completes(AnimatedEntity * animated_entity) {
@@ -691,9 +700,9 @@ void draw_debug_data(){
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "nick anim state %d", curr_nick_state);
     
-    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy speed %d", (int)willy.entity.speed);
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
@@ -725,7 +734,6 @@ void stage00_init(void){
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
-    set_entity_state(&willy, RUN);
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
@@ -753,14 +761,11 @@ void stage00_update(void){
     // Read the controller
     nuContDataGetEx(contdata, 0);
 
-    //handle movement
-    move_entity_analog_stick(&nick.entity, cam, contdata);
-    //move_entity_c_buttons(&nick.entity, cam, contdata);
-
-    move_cam(&cam, nick.entity, contdata);
-
     //Handle animation
     handle_controller_input(contdata);
+
+    move_entity_one_frame(&nick.entity);
+    move_entity_one_frame(&willy.entity);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
@@ -769,11 +774,12 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
-    //set_entity_state(&willy, JUMP);
-    if (time_data.cur_frame % 500 == 1) set_entity_state(&willy, RUN);
+    if (time_data.cur_frame % 600 < 30) set_entity_state(&willy, RUN);
+    else if (time_data.cur_frame % 600 < 40) willy.entity.yaw += (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 600 < 50) willy.entity.yaw -= (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
-    else if (time_data.cur_frame % 500 == 2) set_entity_state(&willy, JUMP);
-    else if (time_data.cur_frame % 500 == 3) set_entity_state(&willy, IDLE);
+    //else if (time_data.cur_frame % 500 == 2) set_entity_state(&willy, JUMP);
+    //else if (time_data.cur_frame % 500 == 3) set_entity_state(&willy, IDLE);
 }
 
 
