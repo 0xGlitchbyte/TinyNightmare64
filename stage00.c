@@ -451,8 +451,8 @@ void set_cam(Camera *camera, Entity entity){
 
 void update_animation_based_on_state(AnimatedEntity * animated_entity) {
     entity_state new_state = animated_entity->entity.state;
+    s64ModelHelper* helper = &animated_entity->helper;
     if (animated_entity->entity.type == NICK) {
-        s64ModelHelper* helper = &animated_entity->helper;
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_nick_jump);
         if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_nick_roll);
         if (new_state == FALL) sausage64_set_anim(helper, ANIMATION_nick_fall);
@@ -460,6 +460,12 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_nick_idle);
         if (new_state == WALK) sausage64_set_anim(helper, ANIMATION_nick_walk);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_nick_run);
+    } else if (animated_entity->entity.type == WILLY) {
+        // TODO - handle states that willy can't be in somewhere
+        if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
+        //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
+        if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
+        if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
     }
 }
 
@@ -478,7 +484,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == RUN)) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
-        nick.entity.vertical_speed = 600;
+        animated_entity->entity.vertical_speed = 600;
     }
 
     if (new_state == ROLL && 
@@ -487,7 +493,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == RUN )) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
-        nick.entity.speed = 800;
+        animated_entity->entity.speed = 800;
     }
 
     if (new_state == WALK && curr_state == IDLE) {
@@ -560,7 +566,7 @@ void when_animation_completes(AnimatedEntity * animated_entity) {
             break;
         case ROLL:
             set_entity_state(animated_entity, IDLE);
-            nick.entity.speed = 0;
+            animated_entity->entity.speed = 0;
             break;
     }
 }
@@ -715,8 +721,8 @@ void stage00_init(void){
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
-    willy.entity.state = RUN;
-    sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
+    set_entity_state(&willy, RUN);
+    //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
     
     // Set nick's animation speed based on region
@@ -757,6 +763,13 @@ void stage00_update(void){
     
     sausage64_advance_anim(&nick.helper, animspeed);
 
+    // make willy do different stuff    
+
+    set_entity_state(&willy, JUMP);
+    if (time_data.cur_frame % 10 == 5) set_entity_state(&willy, JUMP);
+    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
+    if (time_data.cur_frame % 10 == 7) set_entity_state(&willy, RUN);
+    if (time_data.cur_frame % 10 == 8) set_entity_state(&willy, IDLE);
 }
 
 
