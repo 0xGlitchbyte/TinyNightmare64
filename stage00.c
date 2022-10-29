@@ -21,6 +21,8 @@
 #include "pumpkin.h"
 #include "gravestone.h"
 #include "gravestone_cross.h"
+#include "gravestone_flat.h"
+#include "gravestone_flat_2.h"
 #include "shack.h"
 #include "axisMdl.h"
 #include "debug.h"
@@ -152,6 +154,20 @@ StaticEntity gravestone_cross = {
         pos: { 300, -300, 0},
     },
     mesh: gfx_gravestone_cross,
+};
+
+StaticEntity gravestone_flat = {
+    entity: {
+        pos: { 300, -600, 0},
+    },
+    mesh: gfx_gravestone_flat,
+};
+
+StaticEntity gravestone_flat_2 = {
+    entity: {
+        pos: { 300, 500, 0},
+    },
+    mesh: gfx_gravestone_flat_2,
 };
 
 StaticEntity shack = {
@@ -742,6 +758,8 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     draw_static_entity(&pumpkin);
     draw_static_entity(&gravestone);
     draw_static_entity(&gravestone_cross);
+    draw_static_entity(&gravestone_flat);
+    draw_static_entity(&gravestone_flat_2);
     draw_static_entity(&shack);
 
     draw_animated_entity(&nick);

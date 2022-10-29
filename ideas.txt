@@ -1,0 +1,18 @@
+- trees
+    - evergreens
+    - typical trees
+- rocks
+- bushes
+- fence pieces
+
+
+- try to swap out colors on existing moving entities
+    - white or blue wolf
+        - maybe drawn a bit smaller than the big black one
+        - black one becomes boss, maybe rendered even a little bigger
+    - all white version of nick, for a mummy
+        - maybe dynamic mesh for it throwing some of its bandages at you
+          and pulling nick toward it "get over here!!!" style
+    - green skin nick for a zombie
+
+
