@@ -133,7 +133,7 @@ StaticEntity candy = {
 
 StaticEntity pumpkin = {
     entity: {
-        pos: { -300, 300, 50},
+        pos: { -300, 300, 30},
     },
     mesh: gfx_pumpkin,
 };
@@ -141,14 +141,14 @@ StaticEntity pumpkin = {
 
 StaticEntity gravestone = {
     entity: {
-        pos: { 300, 300, 50},
+        pos: { 300, 300, 0},
     },
     mesh: gfx_gravestone,
 };
 
 StaticEntity gravestone_cross = {
     entity: {
-        pos: { 300, -300, 50},
+        pos: { 300, -300, 0},
     },
     mesh: gfx_gravestone_cross,
 };
