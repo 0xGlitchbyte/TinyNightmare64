@@ -521,6 +521,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
             ) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
+        animated_entity->entity.speed = 0;
     }
 
     if (new_state == MIDAIR) {
@@ -599,7 +600,17 @@ void nick_animcallback(u16 anim){
 
 void willy_animcallback(u16 anim)
 {
-    when_animation_completes(&willy);
+    // Go to idle animation when we finished attacking
+    switch(animated_entity->entity.state)
+    {
+        case JUMP:
+            set_entity_state(animated_entity, IDLE);
+            break;
+        case ROLL:
+            set_entity_state(animated_entity, IDLE);
+            animated_entity->entity.speed = 0;
+            break;
+    }
 }
 
 
@@ -774,12 +785,12 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
-    if (time_data.cur_frame % 600 < 30) set_entity_state(&willy, RUN);
-    else if (time_data.cur_frame % 600 < 40) willy.entity.yaw += (time_data.cur_frame % 10);
-    else if (time_data.cur_frame % 600 < 50) willy.entity.yaw -= (time_data.cur_frame % 10);
+    if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
+    else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
-    //else if (time_data.cur_frame % 500 == 2) set_entity_state(&willy, JUMP);
-    //else if (time_data.cur_frame % 500 == 3) set_entity_state(&willy, IDLE);
+    else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
+    else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
 }
 
 
