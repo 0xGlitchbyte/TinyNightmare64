@@ -17,6 +17,7 @@
 #include "nick.h"
 #include "willy.h"
 #include "ground_block.h"
+#include "candy.h"
 #include "axisMdl.h"
 #include "debug.h"
 
@@ -74,7 +75,7 @@ float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity: 2000,
+    distance_from_entity: 700,
     pitch: 30,
     angle_around_entity: 0,
 };
@@ -116,6 +117,14 @@ StaticEntity ground = {
         pos: { -500, 500, 80},
     },
     mesh: gfx_ground,
+};
+
+
+StaticEntity candy = {
+    entity: {
+        pos: { -500, 500, 150},
+    },
+    mesh: gfx_candy,
 };
 
 // USB
@@ -288,15 +297,15 @@ void handle_camera_c_buttons(Camera *camera, NUContData cont[1]){
     }
 
     if (cont[0].trigger & L_CBUTTONS){
-        camera->angle_around_entity += 45;
+        camera->angle_around_entity -= 15;
     }
    
     if (cont[0].trigger & R_CBUTTONS && camera->angle_around_entity == 0){
         camera->angle_around_entity = 360;
-        camera->angle_around_entity -= 45;
+        camera->angle_around_entity += 15;
     }else
     if (cont[0].trigger & R_CBUTTONS){
-        camera->angle_around_entity -= 45;
+        camera->angle_around_entity += 25;
     }
 
     if (camera->angle_around_entity == 360){
@@ -684,6 +693,7 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     //draw the entities
     draw_static_entity(&axis);
     draw_static_entity(&ground);
+    draw_static_entity(&candy);
 
     draw_animated_entity(&nick);
 
