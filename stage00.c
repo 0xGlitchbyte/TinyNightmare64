@@ -58,7 +58,7 @@ void willy_animcallback(u16 anim);
 
 void draw_animated_entity(AnimatedEntity *entity);
 void draw_static_entity(StaticEntity *static_entity);
-void draw_world(AnimatedEntity entity, Camera *camera, LightData *light);
+void draw_world(AnimatedEntity *entity, Camera *camera, LightData *light);
 
 void draw_debug_data();
 
@@ -242,7 +242,8 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     }
 }
 
-void move_entity_one_frame(Entity *entity){
+void move_entity_one_frame(AnimatedEntity *animated_entity){
+    Entity *entity = &animated_entity->entity;
     float frame_distance = time_data.frame_duration * entity->speed;
     
     // apply some gravity
@@ -252,7 +253,7 @@ void move_entity_one_frame(Entity *entity){
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
             entity->pos[2] = 0;
-            set_entity_state(entity, IDLE);
+            set_entity_state(animated_entity, IDLE);
         }
     } 
 
@@ -658,7 +659,7 @@ void draw_static_entity(StaticEntity *static_entity){
     Draws entities 
 ==============================*/
 
-void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
+void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     // Initialize the RCP to draw stuff nicely
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
@@ -676,7 +677,7 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
     gDPSetTextureLUT(glistp++, G_TT_NONE);
 
     //set view matrix and lights
-    set_cam(camera, highlighted.entity);
+    set_cam(camera, highlighted->entity);
 
     set_light(light);
 
@@ -774,10 +775,10 @@ void stage00_update(void){
     nuContDataGetEx(contdata, 0);
 
     //Handle animation
-    handle_controller_input(contdata, &willy);
+    handle_controller_input(contdata, &nick);
 
-    move_entity_one_frame(&nick.entity);
-    move_entity_one_frame(&willy.entity);
+    move_entity_one_frame(&nick);
+    move_entity_one_frame(&willy);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
@@ -786,14 +787,12 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
-    /*
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
-    */
 }
 
 
@@ -811,7 +810,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(16, 32, 32);
 
-    draw_world(willy, &cam, &light_data);    
+    draw_world(&nick, &cam, &light_data);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
