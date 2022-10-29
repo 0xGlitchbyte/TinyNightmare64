@@ -775,7 +775,7 @@ void stage00_update(void){
     nuContDataGetEx(contdata, 0);
 
     //Handle animation
-    handle_controller_input(contdata, &willy);
+    handle_controller_input(contdata, &nick);
 
     move_entity_one_frame(&nick);
     move_entity_one_frame(&willy);
@@ -787,14 +787,12 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
-    /*
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
-    */
 }
 
 
@@ -812,7 +810,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(16, 32, 32);
 
-    draw_world(&willy, &cam, &light_data);    
+    draw_world(&nick, &cam, &light_data);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
