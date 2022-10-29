@@ -218,12 +218,15 @@ float Q_rsqrt( float number )
     Moves entity with analog stick
 ==============================*/
 
+int curr_nick_state;
+
 void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1]){
 	
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
     int curr_state = sausage64_get_currentanim(&nick.helper);
+    curr_nick_state = curr_state;
     if (curr_state != ANIMATION_nick_roll
         && curr_state != ANIMATION_nick_jump
         && curr_state != ANIMATION_nick_fall
@@ -501,7 +504,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
         update_animation_based_on_state(animated_entity);
     }
     if (new_state == RUN && 
-            ( curr_state == IDLE || curr_state == WALK )) {
+            ( curr_state == IDLE || curr_state == WALK)) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
     }
@@ -543,6 +546,7 @@ void handle_controller_input(NUContData cont[1]){
     }
 
     if (cont->stick_x == 0 && cont->stick_y == 0
+        && nick.entity.state != JUMP 
         && nick.entity.state != ROLL
         && nick.entity.state != FALL 
         && nick.entity.state != MIDAIR 
@@ -685,13 +689,13 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time %d", (int)get_time());
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "nick anim state %d", curr_nick_state);
     
     /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "diff %llu", time_data.cur_frame - time_data.last_frame);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "horizontal distance %d", (int)cam.horizontal_distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 6);
@@ -765,11 +769,11 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
-    set_entity_state(&willy, JUMP);
-    if (time_data.cur_frame % 10 == 5) set_entity_state(&willy, JUMP);
+    //set_entity_state(&willy, JUMP);
+    if (time_data.cur_frame % 500 == 1) set_entity_state(&willy, RUN);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
-    if (time_data.cur_frame % 10 == 7) set_entity_state(&willy, RUN);
-    if (time_data.cur_frame % 10 == 8) set_entity_state(&willy, IDLE);
+    else if (time_data.cur_frame % 500 == 2) set_entity_state(&willy, JUMP);
+    else if (time_data.cur_frame % 500 == 3) set_entity_state(&willy, IDLE);
 }
 
 
