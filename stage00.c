@@ -45,8 +45,8 @@ void handle_camera_c_buttons(Camera *camera, NUContData cont[1]);
 void move_entity_c_buttons(Entity *entity, Camera camera, NUContData cont[1]);
 void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
 
-void get_cam_position(Camera *camera, Entity entity);
-void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
+void get_cam_position(Camera *camera, Entity *entity);
+void move_cam(Camera *camera, Entity* entity, NUContData cont[1]);
 
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
@@ -224,12 +224,12 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
-    int curr_state = sausage64_get_currentanim(&nick.helper);
+    int curr_state = entity->state;
     curr_nick_state = curr_state;
-    if (curr_state != ANIMATION_nick_roll
-        && curr_state != ANIMATION_nick_jump
-        && curr_state != ANIMATION_nick_fall
-        && curr_state != ANIMATION_nick_midair
+    if (curr_state != ROLL
+        && curr_state != JUMP
+        && curr_state != FALL
+        && curr_state != MIDAIR 
         ) {
         if ((cont->stick_x != 0 || cont->stick_y != 0)) {
             entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
@@ -252,7 +252,7 @@ void move_entity_one_frame(Entity *entity){
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
             entity->pos[2] = 0;
-            set_entity_state(&nick, IDLE);
+            set_entity_state(entity, IDLE);
         }
     } 
 
@@ -365,16 +365,16 @@ void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
     calculates camera coordinates
 ==============================*/
 
-void get_cam_position(Camera *camera, Entity entity){
+void get_cam_position(Camera *camera, Entity *entity){
 
     camera->horizontal_distance_from_entity = camera->distance_from_entity * cos(rad(camera->pitch));
 	camera->vertical_distance_from_entity = camera->distance_from_entity * sin(rad(camera->pitch));
 
-    camera->pos[0] = entity.pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
-    camera->pos[1] = entity.pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
-    camera->pos[2] = camera->vertical_distance_from_entity + 1/Q_rsqrt(entity.pos[2]);
+    camera->pos[0] = entity->pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
+    camera->pos[1] = entity->pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
+    camera->pos[2] = camera->vertical_distance_from_entity + 1/Q_rsqrt(entity->pos[2]);
 
-    if ((camera->vertical_distance_from_entity + entity.pos[2]) < 5){cam.pos[2] = 5;}
+    if ((camera->vertical_distance_from_entity + entity->pos[2]) < 5){cam.pos[2] = 5;}
 }
 
 
@@ -383,7 +383,7 @@ void get_cam_position(Camera *camera, Entity entity){
     Controls camera movement
 ==============================*/
 
-void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
+void move_cam(Camera *camera, Entity *entity, NUContData cont[1]){
 
     handle_camera_c_buttons(camera, cont);
     //handle_camera_analog_stick(camera, cont);
@@ -541,29 +541,29 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
     link entity animations to controller input
 ==============================*/
 
-void handle_controller_input(NUContData cont[1]){
-    if (cont[0].trigger & A_BUTTON) set_entity_state(&nick, JUMP);
-    if (cont[0].trigger & B_BUTTON) set_entity_state(&nick, ROLL);
-    if (nick.entity.speed > 900) {
-        set_entity_state(&nick, RUN);
+void handle_controller_input(NUContData cont[1], AnimatedEntity* entity){
+    if (cont[0].trigger & A_BUTTON) set_entity_state(entity, JUMP);
+    if (cont[0].trigger & B_BUTTON) set_entity_state(entity, ROLL);
+    if (entity->entity.speed > 900) {
+        set_entity_state(entity, RUN);
     } else if (cont->stick_x != 0 || cont->stick_y != 0) {
-        set_entity_state(&nick, WALK);
+        set_entity_state(entity, WALK);
     }
 
     if (cont->stick_x == 0 && cont->stick_y == 0
-        && nick.entity.state != JUMP 
-        && nick.entity.state != ROLL
-        && nick.entity.state != FALL 
-        && nick.entity.state != MIDAIR 
+        && entity->entity.state != JUMP 
+        && entity->entity.state != ROLL
+        && entity->entity.state != FALL 
+        && entity->entity.state != MIDAIR 
         ) {
-        set_entity_state(&nick, IDLE);
+        set_entity_state(entity, IDLE);
     }
 
     //handle movement
-    move_entity_analog_stick(&nick.entity, cam, contdata);
-    //move_entity_c_buttons(&nick.entity, cam, contdata);
+    move_entity_analog_stick(&entity->entity, cam, contdata);
+    //move_entity_c_buttons(entity.entity, cam, contdata);
 
-    move_cam(&cam, nick.entity, contdata);
+    move_cam(&cam, &entity->entity, contdata);
 }
 
 void when_animation_completes(AnimatedEntity * animated_entity) {
@@ -774,7 +774,7 @@ void stage00_update(void){
     nuContDataGetEx(contdata, 0);
 
     //Handle animation
-    handle_controller_input(contdata);
+    handle_controller_input(contdata, &willy);
 
     move_entity_one_frame(&nick.entity);
     move_entity_one_frame(&willy.entity);
@@ -786,12 +786,14 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
+    /*
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
+    */
 }
 
 
@@ -809,7 +811,7 @@ void stage00_draw(void){
     rcp_init();
     fb_clear(16, 32, 32);
 
-    draw_world(nick, &cam, &light_data);    
+    draw_world(willy, &cam, &light_data);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
