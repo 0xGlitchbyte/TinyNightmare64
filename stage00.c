@@ -18,6 +18,9 @@
 #include "willy.h"
 #include "ground_block.h"
 #include "candy.h"
+#include "pumpkin.h"
+#include "gravestone.h"
+#include "gravestone_cross.h"
 #include "axisMdl.h"
 #include "debug.h"
 
@@ -126,6 +129,28 @@ StaticEntity candy = {
         pos: { -500, 500, 150},
     },
     mesh: gfx_candy,
+};
+
+StaticEntity pumpkin = {
+    entity: {
+        pos: { -300, 300, 50},
+    },
+    mesh: gfx_pumpkin,
+};
+
+
+StaticEntity gravestone = {
+    entity: {
+        pos: { 300, 300, 50},
+    },
+    mesh: gfx_gravestone,
+};
+
+StaticEntity gravestone_cross = {
+    entity: {
+        pos: { 300, -300, 50},
+    },
+    mesh: gfx_gravestone_cross,
 };
 
 // USB
@@ -706,6 +731,9 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     draw_static_entity(&axis);
     draw_static_entity(&ground);
     draw_static_entity(&candy);
+    draw_static_entity(&pumpkin);
+    draw_static_entity(&gravestone);
+    draw_static_entity(&gravestone_cross);
 
     draw_animated_entity(&nick);
 
