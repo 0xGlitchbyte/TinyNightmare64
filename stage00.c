@@ -530,10 +530,12 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
 void handle_controller_input(NUContData cont[1]){
     if (cont[0].trigger & A_BUTTON) set_entity_state(&nick, JUMP);
     if (cont[0].trigger & B_BUTTON) set_entity_state(&nick, ROLL);
-    if (cont->stick_x != 0 || cont->stick_y != 0) {
+    if (nick.entity.speed > 900) {
+        set_entity_state(&nick, RUN);
+    } else if (cont->stick_x != 0 || cont->stick_y != 0) {
         set_entity_state(&nick, WALK);
     }
-    if (nick.entity.speed > 900) set_entity_state(&nick, RUN);
+
     if (cont->stick_x == 0 && cont->stick_y == 0
         && nick.entity.state != ROLL
         && nick.entity.state != FALL 
@@ -554,9 +556,6 @@ void when_animation_completes(AnimatedEntity * animated_entity) {
             set_entity_state(animated_entity, FALL);
             break;
         case FALL:
-            set_entity_state(animated_entity, IDLE);
-            break;
-        case RUN:
             set_entity_state(animated_entity, IDLE);
             break;
         case ROLL:
