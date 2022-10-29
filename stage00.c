@@ -113,7 +113,7 @@ StaticEntity axis = {
 
 StaticEntity ground = {
     entity: {
-        pos: { -500, 500, 0},
+        pos: { -500, 500, 80},
     },
     mesh: gfx_ground,
 };
@@ -517,6 +517,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == RUN 
               || curr_state == ROLL 
               || curr_state == FALL 
+              || curr_state == JUMP 
             )
             ) {
         entity->state = new_state;
@@ -601,14 +602,14 @@ void nick_animcallback(u16 anim){
 void willy_animcallback(u16 anim)
 {
     // Go to idle animation when we finished attacking
-    switch(animated_entity->entity.state)
+    switch(willy.entity.state)
     {
         case JUMP:
-            set_entity_state(animated_entity, IDLE);
+            set_entity_state(&willy, IDLE);
             break;
         case ROLL:
-            set_entity_state(animated_entity, IDLE);
-            animated_entity->entity.speed = 0;
+            set_entity_state(&willy, IDLE);
+            willy.entity.speed = 0;
             break;
     }
 }
