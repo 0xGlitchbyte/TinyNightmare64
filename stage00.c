@@ -89,6 +89,7 @@ LightData light_data = {
 AnimatedEntity nick = {
     entity: {
         pos: { 0, 0, 0},
+        type: NICK
     }
 };
 
@@ -97,6 +98,7 @@ Mtx nickMtx[MESHCOUNT_nick];
 AnimatedEntity willy = {
     entity: {
         pos: { 400, 400, 0},
+        type: WILLY
     }
 };
 
@@ -474,28 +476,28 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
             (    curr_state == IDLE 
               || curr_state == WALK 
               || curr_state == RUN)) {
+        entity->state = new_state;
         update_animation_based_on_state(animated_entity);
         nick.entity.vertical_speed = 600;
-        entity->state = new_state;
     }
 
     if (new_state == ROLL && 
             (    curr_state == IDLE 
               || curr_state == WALK 
               || curr_state == RUN )) {
+        entity->state = new_state;
         update_animation_based_on_state(animated_entity);
         nick.entity.speed = 800;
-        entity->state = new_state;
     }
 
     if (new_state == WALK && curr_state == IDLE) {
-        update_animation_based_on_state(animated_entity);
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
     }
     if (new_state == RUN && 
             ( curr_state == IDLE || curr_state == WALK )) {
-        update_animation_based_on_state(animated_entity);
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
     }
 
     if (new_state == IDLE
@@ -505,18 +507,18 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == FALL 
             )
             ) {
-        update_animation_based_on_state(animated_entity);
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
     }
 
     if (new_state == MIDAIR) {
-        update_animation_based_on_state(animated_entity);
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
     }
 
     if (new_state == FALL) {
-        update_animation_based_on_state(animated_entity);
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
     }
 }
 
