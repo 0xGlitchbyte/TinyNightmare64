@@ -99,6 +99,7 @@ Mtx nickMtx[MESHCOUNT_nick];
 AnimatedEntity willy = {
     entity: {
         pos: { 400, 400, 0},
+        yaw: 180,
         type: WILLY
     }
 };
@@ -251,9 +252,15 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     }
 }
 
-void move_entity_one_frame(AnimatedEntity *animated_entity){
-    Entity *entity = &animated_entity->entity;
+void move_entity_one_frame(Entity *entity){
+
     float frame_distance = time_data.frame_duration * entity->speed;
+    entity->pos[0] += frame_distance * sin(rad(entity->yaw));
+    entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
+}
+
+void move_animated_entity_one_frame(AnimatedEntity *animated_entity){
+    Entity *entity = &animated_entity->entity;
     
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
@@ -265,9 +272,7 @@ void move_entity_one_frame(AnimatedEntity *animated_entity){
             set_entity_state(animated_entity, IDLE);
         }
     } 
-
-    entity->pos[0] += frame_distance * sin(rad(entity->yaw));
-    entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
+    move_entity_one_frame(entity);
 }
 
 /*==============================
@@ -552,6 +557,13 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
 ==============================*/
 
 void handle_controller_input(NUContData cont[1], AnimatedEntity* entity){
+    if (cont[0].trigger & R_TRIG) {
+        candy.entity.pos[0] = entity->entity.pos[0];
+        candy.entity.pos[1] = entity->entity.pos[1];
+        candy.entity.pos[2] = entity->entity.pos[2] + 50;
+        candy.entity.speed = 3000;
+        candy.entity.yaw = entity->entity.yaw;
+    }
     if (cont[0].trigger & A_BUTTON) set_entity_state(entity, JUMP);
     if (cont[0].trigger & B_BUTTON) set_entity_state(entity, ROLL);
     if (entity->entity.speed > 900) {
@@ -787,8 +799,9 @@ void stage00_update(void){
     //Handle animation
     handle_controller_input(contdata, &nick);
 
-    move_entity_one_frame(&nick);
-    move_entity_one_frame(&willy);
+    move_animated_entity_one_frame(&nick);
+    move_animated_entity_one_frame(&willy);
+    move_entity_one_frame(&candy.entity);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
@@ -818,7 +831,7 @@ void stage00_draw(void){
 
     // Initialize the RCP and framebuffer
     rcp_init();
-    fb_clear(16, 32, 32);
+    fb_clear(16, 132, 132);
 
     draw_world(&nick, &cam, &light_data);    
 
