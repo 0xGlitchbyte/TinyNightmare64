@@ -126,7 +126,6 @@ StaticEntity ground = {
     mesh: gfx_ground,
 };
 
-
 StaticEntity candy = {
     entity: {
         pos: { -500, 500, 150},
@@ -134,47 +133,17 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-StaticEntity pumpkin = {
-    entity: {
-        pos: { -300, 300, 30},
-    },
-    mesh: gfx_pumpkin,
-};
-
-
-StaticEntity gravestone = {
-    entity: {
-        pos: { 300, 300, 0},
-    },
-    mesh: gfx_gravestone,
-};
-
-StaticEntity gravestone_cross = {
-    entity: {
-        pos: { 300, -300, 0},
-    },
-    mesh: gfx_gravestone_cross,
-};
-
-StaticEntity gravestone_flat = {
-    entity: {
-        pos: { 300, -600, 0},
-    },
-    mesh: gfx_gravestone_flat,
-};
-
-StaticEntity gravestone_flat_2 = {
-    entity: {
-        pos: { 300, 500, 0},
-    },
-    mesh: gfx_gravestone_flat_2,
-};
-
-StaticEntity shack = {
-    entity: {
-        pos: { 1000, 1000, 0},
-    },
-    mesh: gfx_shack,
+#define SCENERY_COUNT 9
+StaticEntity scenery[SCENERY_COUNT]= {
+    {entity: { pos: { -300, 300, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -300, 350, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -240, 350, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -120, 250, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { 300, 300, 30}, },mesh: gfx_gravestone},
+    {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
+    {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
+    {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2},
+    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack}
 };
 
 // USB
@@ -752,15 +721,14 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     set_light(light);
 
     //draw the entities
-    draw_static_entity(&axis);
+    //draw_static_entity(&axis);
     draw_static_entity(&ground);
     draw_static_entity(&candy);
-    draw_static_entity(&pumpkin);
-    draw_static_entity(&gravestone);
-    draw_static_entity(&gravestone_cross);
-    draw_static_entity(&gravestone_flat);
-    draw_static_entity(&gravestone_flat_2);
-    draw_static_entity(&shack);
+
+    for (int i = 0; i < SCENERY_COUNT; i++) {
+        draw_static_entity(&scenery[i]);
+    }
+
 
     draw_animated_entity(&nick);
 
