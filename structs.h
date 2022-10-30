@@ -39,6 +39,23 @@ typedef struct {
 	float roll;
 } Camera;
 
+typedef enum { 
+    IDLE, 
+    WALK, 
+   	RUN,
+	ROLL,
+   	JUMP,
+	FALL,
+	MIDAIR,
+	FALLBACK,	
+} entity_state;
+
+typedef enum {
+	NICK,
+	WILLY,
+	SKELLY
+} entity_type;
+
 typedef struct {
 	Mtx	pos_mtx;
 	Mtx	rot_mtx[3];
@@ -52,7 +69,8 @@ typedef struct {
 	float vertical_speed;
 	float forward_speed;
 	float side_speed;
-	
+	entity_state state;
+	entity_type type;	
 } Entity;
 
 

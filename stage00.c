@@ -16,6 +16,15 @@
 #include "palette.h"
 #include "nick.h"
 #include "willy.h"
+#include "zombie.h"
+#include "ground_block.h"
+#include "candy.h"
+#include "pumpkin.h"
+#include "gravestone.h"
+#include "gravestone_cross.h"
+#include "gravestone_flat.h"
+#include "gravestone_flat_2.h"
+#include "shack.h"
 #include "axisMdl.h"
 #include "debug.h"
 
@@ -44,20 +53,20 @@ void handle_camera_c_buttons(Camera *camera, NUContData cont[1]);
 void move_entity_c_buttons(Entity *entity, Camera camera, NUContData cont[1]);
 void handle_camera_analog_stick(Camera *camera, NUContData cont[1]);
 
-void get_cam_position(Camera *camera, Entity entity);
-void move_cam(Camera *camera, Entity entity, NUContData cont[1]);
+void get_cam_position(Camera *camera, Entity *entity);
+void move_cam(Camera *camera, Entity* entity, NUContData cont[1]);
 
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
 
+void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state);
 void animate_nick(NUContData cont[1]);
-void animate_willy(NUContData cont[1]);
 void nick_animcallback(u16 anim);
 void willy_animcallback(u16 anim);
 
 void draw_animated_entity(AnimatedEntity *entity);
 void draw_static_entity(StaticEntity *static_entity);
-void draw_world(AnimatedEntity entity, Camera *camera, LightData *light);
+void draw_world(AnimatedEntity *entity, Camera *camera, LightData *light);
 
 void draw_debug_data();
 
@@ -73,7 +82,7 @@ float animspeed;
 
 // Camera
 Camera cam = {
-    distance_from_entity: 2000,
+    distance_from_entity: 700,
     pitch: 30,
     angle_around_entity: 0,
 };
@@ -88,6 +97,7 @@ LightData light_data = {
 AnimatedEntity nick = {
     entity: {
         pos: { 0, 0, 0},
+        type: NICK
     }
 };
 
@@ -96,19 +106,83 @@ Mtx nickMtx[MESHCOUNT_nick];
 AnimatedEntity willy = {
     entity: {
         pos: { 400, 400, 0},
+        yaw: 180,
+        type: WILLY
     }
 };
 
 Mtx willyMtx[MESHCOUNT_willy];
 
+
+AnimatedEntity zombie = {
+    entity: {
+        pos: { 400, 400, 0},
+        yaw: 180,
+        type: NICK 
+    }
+};
+
+Mtx zombieMtx[MESHCOUNT_zombie];
+
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
-        
     },
     mesh: gfx_axis,
 };
 
+#define GROUND_SEGMENTS_COUNT 25 
+StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
+
+StaticEntity candy = {
+    entity: {
+        pos: { -500, 500, 150},
+    },
+    mesh: gfx_candy,
+};
+
+StaticEntity pumpkin = {
+    entity: {
+        pos: { -300, 300, 30},
+    },
+    mesh: gfx_pumpkin,
+};
+
+
+StaticEntity gravestone = {
+    entity: {
+        pos: { 300, 300, 0},
+    },
+    mesh: gfx_gravestone,
+};
+
+StaticEntity gravestone_cross = {
+    entity: {
+        pos: { 300, -300, 0},
+    },
+    mesh: gfx_gravestone_cross,
+};
+
+StaticEntity gravestone_flat = {
+    entity: {
+        pos: { 300, -600, 0},
+    },
+    mesh: gfx_gravestone_flat,
+};
+
+StaticEntity gravestone_flat_2 = {
+    entity: {
+        pos: { 300, 500, 0},
+    },
+    mesh: gfx_gravestone_flat_2,
+};
+
+StaticEntity shack = {
+    entity: {
+        pos: { 1000, 1000, 0},
+    },
+    mesh: gfx_shack,
+};
 
 // USB
 static char uselight = TRUE;
@@ -209,13 +283,20 @@ float Q_rsqrt( float number )
     Moves entity with analog stick
 ==============================*/
 
+int curr_nick_state;
+
 void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1]){
 	
 	if (fabs(cont->stick_x) < 7){cont->stick_x = 0;}
 	if (fabs(cont->stick_y) < 7){cont->stick_y = 0;}
 
-    int curr_state = sausage64_get_currentanim(&nick.helper);
-    if (curr_state != ANIMATION_nick_roll) {
+    int curr_state = entity->state;
+    curr_nick_state = curr_state;
+    if (curr_state != ROLL
+        && curr_state != JUMP
+        && curr_state != FALL
+        && curr_state != MIDAIR 
+        ) {
         if ((cont->stick_x != 0 || cont->stick_y != 0)) {
             entity->yaw = deg(atan2(cont->stick_x, -cont->stick_y) - rad(camera.angle_around_entity));
             entity->speed = 1/Q_rsqrt(cont->stick_x * cont->stick_x + cont->stick_y * cont->stick_y) * 12;
@@ -225,21 +306,29 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
             entity->speed = 0;
         }
     }
+}
+
+void move_entity_one_frame(Entity *entity){
 
     float frame_distance = time_data.frame_duration * entity->speed;
+    entity->pos[0] += frame_distance * sin(rad(entity->yaw));
+    entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
+}
+
+void move_animated_entity_one_frame(AnimatedEntity *animated_entity){
+    Entity *entity = &animated_entity->entity;
     
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
-        entity->vertical_speed -= 50;
+        entity->vertical_speed -= 14;
         entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
             entity->pos[2] = 0;
+            set_entity_state(animated_entity, IDLE);
         }
     } 
-
-    entity->pos[0] += frame_distance * sin(rad(entity->yaw));
-    entity->pos[1] -= frame_distance * cos(rad(entity->yaw));
+    move_entity_one_frame(entity);
 }
 
 /*==============================
@@ -269,15 +358,15 @@ void handle_camera_c_buttons(Camera *camera, NUContData cont[1]){
     }
 
     if (cont[0].trigger & L_CBUTTONS){
-        camera->angle_around_entity += 45;
+        camera->angle_around_entity -= 15;
     }
    
     if (cont[0].trigger & R_CBUTTONS && camera->angle_around_entity == 0){
         camera->angle_around_entity = 360;
-        camera->angle_around_entity -= 45;
+        camera->angle_around_entity += 15;
     }else
     if (cont[0].trigger & R_CBUTTONS){
-        camera->angle_around_entity -= 45;
+        camera->angle_around_entity += 25;
     }
 
     if (camera->angle_around_entity == 360){
@@ -347,16 +436,16 @@ void handle_camera_analog_stick(Camera *camera, NUContData cont[1]){
     calculates camera coordinates
 ==============================*/
 
-void get_cam_position(Camera *camera, Entity entity){
+void get_cam_position(Camera *camera, Entity *entity){
 
     camera->horizontal_distance_from_entity = camera->distance_from_entity * cos(rad(camera->pitch));
 	camera->vertical_distance_from_entity = camera->distance_from_entity * sin(rad(camera->pitch));
 
-    camera->pos[0] = entity.pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
-    camera->pos[1] = entity.pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
-    camera->pos[2] = camera->vertical_distance_from_entity + 1/Q_rsqrt(entity.pos[2]);
+    camera->pos[0] = entity->pos[0] - camera->horizontal_distance_from_entity * sin(rad(camera->angle_around_entity));
+    camera->pos[1] = entity->pos[1] - camera->horizontal_distance_from_entity * cos(rad(camera->angle_around_entity));
+    camera->pos[2] = camera->vertical_distance_from_entity + 1/Q_rsqrt(entity->pos[2]);
 
-    if ((camera->vertical_distance_from_entity + entity.pos[2]) < 5){cam.pos[2] = 5;}
+    if ((camera->vertical_distance_from_entity + entity->pos[2]) < 5){cam.pos[2] = 5;}
 }
 
 
@@ -365,7 +454,7 @@ void get_cam_position(Camera *camera, Entity entity){
     Controls camera movement
 ==============================*/
 
-void move_cam(Camera *camera, Entity entity, NUContData cont[1]){
+void move_cam(Camera *camera, Entity *entity, NUContData cont[1]){
 
     handle_camera_c_buttons(camera, cont);
     //handle_camera_analog_stick(camera, cont);
@@ -435,80 +524,145 @@ void set_cam(Camera *camera, Entity entity){
     gSPMatrix(glistp++, &camera->modeling, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
 }
 
+void update_animation_based_on_state(AnimatedEntity * animated_entity) {
+    entity_state new_state = animated_entity->entity.state;
+    s64ModelHelper* helper = &animated_entity->helper;
+    if (animated_entity->entity.type == NICK) {
+        if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_nick_jump);
+        if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_nick_roll);
+        if (new_state == FALL) sausage64_set_anim(helper, ANIMATION_nick_fall);
+        if (new_state == MIDAIR) sausage64_set_anim(helper, ANIMATION_nick_midair);
+        if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_nick_idle);
+        if (new_state == WALK) sausage64_set_anim(helper, ANIMATION_nick_walk);
+        if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_nick_run);
+    } else if (animated_entity->entity.type == WILLY) {
+        // TODO - handle states that willy can't be in somewhere
+        if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
+        //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
+        if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
+        if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
+    }
+}
+
+void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) {
+
+    Entity * entity = &animated_entity->entity;
+    int curr_state = entity->state;
+
+    if (curr_state == new_state) {
+        return;
+    }
+
+    if (new_state == JUMP && 
+            (    curr_state == IDLE 
+              || curr_state == WALK 
+              || curr_state == RUN)) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+        animated_entity->entity.vertical_speed = 600;
+    }
+
+    if (new_state == ROLL && 
+            (    curr_state == IDLE 
+              || curr_state == WALK 
+              || curr_state == RUN )) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+        animated_entity->entity.speed = 800;
+    }
+
+    if (new_state == WALK && curr_state == IDLE) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+        // TODO - just to make the zombie move, gets overriden by controller for user
+        animated_entity->entity.speed = 400;
+    }
+    if (new_state == RUN && 
+            ( curr_state == IDLE || curr_state == WALK)) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+        // TODO - just to make willy move, gets overriden by controller for user
+        animated_entity->entity.speed = 800;
+    }
+
+    if (new_state == IDLE
+        && (     curr_state == WALK 
+              || curr_state == RUN 
+              || curr_state == ROLL 
+              || curr_state == FALL 
+              || curr_state == JUMP 
+            )
+            ) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+        animated_entity->entity.speed = 0;
+    }
+
+    if (new_state == MIDAIR) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+    }
+
+    if (new_state == FALL) {
+        entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+    }
+}
 
 /*==============================
     animate_nick & animate_willy
     link entity animations to controller input
 ==============================*/
 
-void animate_nick(NUContData cont[1]){
-
-    int curr_state = sausage64_get_currentanim(&nick.helper);
-    if (cont[0].trigger & A_BUTTON && 
-            (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk 
-              || curr_state == ANIMATION_nick_run )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_jump);
-        nick.entity.vertical_speed = 1500;
+void handle_controller_input(NUContData cont[1], AnimatedEntity* entity){
+    if (cont[0].trigger & R_TRIG) {
+        candy.entity.pos[0] = entity->entity.pos[0];
+        candy.entity.pos[1] = entity->entity.pos[1];
+        candy.entity.pos[2] = entity->entity.pos[2] + 50;
+        candy.entity.speed = 3000;
+        candy.entity.yaw = entity->entity.yaw;
+    }
+    if (cont[0].trigger & A_BUTTON) set_entity_state(entity, JUMP);
+    if (cont[0].trigger & B_BUTTON) set_entity_state(entity, ROLL);
+    if (entity->entity.speed > 900) {
+        set_entity_state(entity, RUN);
+    } else if (cont->stick_x != 0 || cont->stick_y != 0) {
+        set_entity_state(entity, WALK);
     }
 
-    if (cont[0].trigger & B_BUTTON && 
-            (    curr_state == ANIMATION_nick_idle
-              || curr_state == ANIMATION_nick_walk
-              || curr_state == ANIMATION_nick_run )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_roll);
-        nick.entity.speed = 800;
+    if (cont->stick_x == 0 && cont->stick_y == 0
+        && entity->entity.state != JUMP 
+        && entity->entity.state != ROLL
+        && entity->entity.state != FALL 
+        && entity->entity.state != MIDAIR 
+        ) {
+        set_entity_state(entity, IDLE);
     }
 
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && curr_state == ANIMATION_nick_idle)) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
-    }
-    if (nick.entity.speed > 900 && 
-            (    curr_state != ANIMATION_nick_run
-              && curr_state != ANIMATION_nick_roll
-              && curr_state != ANIMATION_nick_jump
-              && curr_state != ANIMATION_nick_fall
-              && curr_state != ANIMATION_nick_midair
-            )) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_run); 
-    }
+    //handle movement
+    move_entity_analog_stick(&entity->entity, cam, contdata);
+    //move_entity_c_buttons(entity.entity, cam, contdata);
 
-    if ((cont->stick_x == 0 && cont->stick_y == 0) && 
-            (    curr_state == ANIMATION_nick_walk
-              || curr_state == ANIMATION_nick_run
-            )) {
-        sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-    }
-
-    /*
-    if (((nick.entity.forward_speed != 0 || nick.entity.side_speed != 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_walk  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump){
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_walk); 
-    }
-
-   
-    if (((nick.entity.forward_speed == 0 && nick.entity.side_speed == 0) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_roll ) && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_idle  && sausage64_get_currentanim(&nick.helper) != ANIMATION_nick_jump) {
-    	sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-    }
-    */
+    move_cam(&cam, &entity->entity, contdata);
 }
 
-
-void animate_willy(NUContData cont[1]){
-
-    if (cont[0].trigger & A_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_jump);
-    }
-
-    if (cont[0].trigger & B_BUTTON && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-        sausage64_set_anim(&willy.helper, ANIMATION_willy_roll);
-    }
-	
-    if (((cont->stick_x != 0 || cont->stick_y != 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_run  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump){
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
-    }
-    
-    if (((cont->stick_x == 0 && cont->stick_y == 0) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_roll ) && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_idle  && sausage64_get_currentanim(&willy.helper) != ANIMATION_willy_jump) {
-    	sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+void when_animation_completes(AnimatedEntity * animated_entity) {
+    // Go to idle animation when we finished attacking
+    switch(animated_entity->entity.state)
+    {
+        case JUMP:
+            set_entity_state(animated_entity, MIDAIR);
+            break;
+        case MIDAIR:
+            set_entity_state(animated_entity, FALL);
+            break;
+        case FALL:
+            set_entity_state(animated_entity, IDLE);
+            break;
+        case ROLL:
+            set_entity_state(animated_entity, IDLE);
+            animated_entity->entity.speed = 0;
+            break;
     }
 }
 
@@ -519,34 +673,23 @@ void animate_willy(NUContData cont[1]){
 ==============================*/
 
 void nick_animcallback(u16 anim){
-
-    // Go to idle animation when we finished attacking
-    switch(anim)
-    {
-        case ANIMATION_nick_jump:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_midair);
-            break;
-        case ANIMATION_nick_midair:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_fall);
-            break;
-        case ANIMATION_nick_fall:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-            break;
-        case ANIMATION_nick_roll:
-            sausage64_set_anim(&nick.helper, ANIMATION_nick_idle);
-            nick.entity.speed = 0;
-            break;
-    }
+    // yes this currently ignores the passed in animation, might not be bad to verify we are finishing
+    // the animation we are expecting, but this way the logic for where we go when transitioning out of
+    // a given state can be shared across different animated entities, that can do some subset, of move/roll/run/etc.
+    when_animation_completes(&nick);
 }
 
 void willy_animcallback(u16 anim)
 {
     // Go to idle animation when we finished attacking
-    switch(anim)
+    switch(willy.entity.state)
     {
-        case ANIMATION_willy_roll:
-        case ANIMATION_willy_jump:
-            //sausage64_set_anim(&willy.helper, ANIMATION_willy_idle);
+        case JUMP:
+            set_entity_state(&willy, IDLE);
+            break;
+        case ROLL:
+            set_entity_state(&willy, IDLE);
+            willy.entity.speed = 0;
             break;
     }
 }
@@ -595,7 +738,7 @@ void draw_static_entity(StaticEntity *static_entity){
     Draws entities 
 ==============================*/
 
-void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
+void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     // Initialize the RCP to draw stuff nicely
     gDPSetCycleType(glistp++, G_CYC_1CYCLE);
@@ -613,17 +756,29 @@ void draw_world(AnimatedEntity highlighted, Camera *camera, LightData *light){
     gDPSetTextureLUT(glistp++, G_TT_NONE);
 
     //set view matrix and lights
-    set_cam(camera, highlighted.entity);
+    set_cam(camera, highlighted->entity);
 
     set_light(light);
 
     //draw the entities
     draw_static_entity(&axis);
+    for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
+        draw_static_entity(&ground_segments[i]);
+    }
+    draw_static_entity(&candy);
+    draw_static_entity(&pumpkin);
+    draw_static_entity(&gravestone);
+    draw_static_entity(&gravestone_cross);
+    draw_static_entity(&gravestone_flat);
+    draw_static_entity(&gravestone_flat_2);
+    draw_static_entity(&shack);
 
     draw_animated_entity(&nick);
 
     draw_animated_entity(&willy);
-    
+    draw_animated_entity(&zombie);
+
+
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
@@ -645,13 +800,13 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "time %d", (int)get_time());
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "nick anim state %d", curr_nick_state);
     
-    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cam pitch %d", (int)cam.pitch);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy speed %d", (int)willy.entity.speed);
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "diff %llu", time_data.cur_frame - time_data.last_frame);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "horizontal distance %d", (int)cam.horizontal_distance_from_entity);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 6);
@@ -674,15 +829,31 @@ void draw_debug_data(){
 ==============================*/
 
 void stage00_init(void){
+
     // Initialize entities
     sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
     sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
-    sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
+    //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
+
+    sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
+    sausage64_set_animcallback(&zombie.helper, NULL);
+
+    // setup the ground
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            ground_segments[i * 5 + j].entity.pos[0] =  -i * 500 + 3 * 500;
+            ground_segments[i * 5 + j].entity.pos[1] =  -j * 500 + 3 * 500;
+            ground_segments[i * 5 + j].entity.pos[2] = 80;
+            ground_segments[i * 5 + j].mesh = gfx_ground;
+        }
+    }
     
+
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
         animspeed = 0.66;
@@ -690,7 +861,6 @@ void stage00_init(void){
         animspeed = 0.5;
     #endif
 }
-
 
 /*==============================
     stage00_update
@@ -708,20 +878,39 @@ void stage00_update(void){
     // Read the controller
     nuContDataGetEx(contdata, 0);
 
-    //handle movement
-    move_entity_analog_stick(&nick.entity, cam, contdata);
-    //move_entity_c_buttons(&nick.entity, cam, contdata);
-
-    move_cam(&cam, nick.entity, contdata);
-
     //Handle animation
-    animate_nick(contdata);
+    handle_controller_input(contdata, &nick);
+
+    move_animated_entity_one_frame(&nick);
+    move_animated_entity_one_frame(&willy);
+    move_animated_entity_one_frame(&zombie);
+    move_entity_one_frame(&candy.entity);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
     
     sausage64_advance_anim(&nick.helper, animspeed);
 
+    sausage64_advance_anim(&zombie.helper, animspeed);
+
+    // make willy do different stuff    
+
+    if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
+    else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
+    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
+    else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
+    else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
+
+
+    // make nick do different stuff    
+
+    if (time_data.cur_frame % 1356 < 30) set_entity_state(&zombie, WALK);
+    else if (time_data.cur_frame % 1356 < 35) zombie.entity.yaw += 3 * (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 1356 < 40) zombie.entity.yaw -= 3 * (time_data.cur_frame % 10);
+    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
+    else if (time_data.cur_frame % 1356 < 42) set_entity_state(&zombie, JUMP);
+    else if (time_data.cur_frame % 1356 < 44) set_entity_state(&zombie, IDLE);
 }
 
 
@@ -737,9 +926,9 @@ void stage00_draw(void){
 
     // Initialize the RCP and framebuffer
     rcp_init();
-    fb_clear(16, 32, 32);
+    fb_clear(16, 132, 132);
 
-    draw_world(nick, &cam, &light_data);    
+    draw_world(&nick, &cam, &light_data);    
 
     // Ensure we haven't gone over the display list size and start the graphics task
     debug_assert((glistp-glist) < GLIST_LENGTH);
