@@ -143,7 +143,7 @@ StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
     {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
     {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2},
-    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack}
+    {entity: { pos: { -1000, -1000, 0}, },mesh: gfx_shack}
 };
 
 // USB
@@ -280,10 +280,17 @@ void move_entity_one_frame(Entity *entity){
 
 void move_animated_entity_one_frame(AnimatedEntity *animated_entity){
     Entity *entity = &animated_entity->entity;
-    
+
+    int GRAVITY = 14;
     // apply some gravity
     if (entity->pos[2] > 0 || entity->vertical_speed > 0 || entity->vertical_speed < 0 ) {
-        entity->vertical_speed -= 14;
+
+        if (entity->type == WILLY && entity->state == FALLBACK) {
+            // TODO hacky standin "animation" for willy getting hit, jump up and fall back fast
+            entity->vertical_speed -= 1200;
+        } else {
+            entity->vertical_speed -= GRAVITY;
+        }
         entity->pos[2] += time_data.frame_duration * entity->vertical_speed;
         if (entity->pos[2] < 0) {
             entity->vertical_speed = 0;
@@ -503,6 +510,7 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
         // TODO - handle states that willy can't be in somewhere
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
         //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
+        if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
     }
@@ -573,7 +581,6 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
 
     if (new_state == FALLBACK) {
         entity->state = new_state;
-        animated_entity->entity.speed = -800;
         update_animation_based_on_state(animated_entity);
     }
 }
@@ -770,10 +777,10 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "nick anim state %d", curr_nick_state);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy state %d", willy.entity.state);
     
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy speed %d", (int)willy.entity.speed);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy anim state %d", sausage64_get_currentanim(&willy.helper));
     /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
@@ -827,7 +834,13 @@ float distance(float* pos1, float* pos2) {
 
 void detect_collisions() {
     if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
+        nick.entity.speed = -800;
         set_entity_state(&nick, FALLBACK);
+    }
+
+    if ( distance(candy.entity.pos, willy.entity.pos) < 150) {
+        willy.entity.vertical_speed = 4000;
+        set_entity_state(&willy, FALLBACK);
     }
 }
 
@@ -884,7 +897,7 @@ void stage00_draw(void){
 
     // Initialize the RCP and framebuffer
     rcp_init();
-    fb_clear(16, 132, 132);
+    fb_clear(16, 32, 32);
 
     draw_world(&nick, &cam, &light_data);    
 
