@@ -753,31 +753,105 @@ int get_static_entity_width(StaticEntity* static_entity) {
     if (static_entity->mesh == gfx_shack) return 800;
 }
 
-int get_static_entity_height(StaticEntity* static_entity) {
+int get_static_entity_depth(StaticEntity* static_entity) {
     if (static_entity->mesh == gfx_shack) return 700;
+}
+
+float dot(float *u, float *v) {
+    return u[0] * v[0] + u[1] * v[1]; 
+}
+
+void vector(float *dest, float *p1, float *p2) {
+    dest[0] = p2[0] - p1[0];
+    dest[1] = p2[1] - p1[1];
 }
 
 // https://stackoverflow.com/questions/2752725/finding-whether-a-point-lies-inside-a-rectangle-or-not/37865332#37865332
 // currently only looks at x and y, despite passing in 3d points
-int pt_in_rect(float* pos1, Entity *entity) {
-    return 1;
+int pt_in_rect(float* pos1, Entity *entity, int width, int depth) {
+
+    float A[3]; float B[3]; float C[3]; float D[3];
+
+    float AB[3];float AM[3];float BC[3];float BM[3];
+
+    A[0] = entity->pos[0] + width / 2;
+    A[1] = entity->pos[1] + depth / 2;
+    
+    B[0] = entity->pos[0] - width / 2;
+    B[1] = entity->pos[1] + depth / 2;
+    
+    C[0] = entity->pos[0] - width / 2;
+    C[1] = entity->pos[1] - depth / 2;
+    
+    D[0] = entity->pos[0] + width / 2;
+    D[1] = entity->pos[1] - depth / 2;
+
+    vector(&AB, &A, &B);
+    vector(&AM, &A, pos1);
+    vector(&BC, &B, C);
+    vector(&BM, &B, pos1);
+
+    float dotABAM = dot(AB, AM);
+    float dotABAB = dot(AB, AB);
+    float dotBCBM = dot(BC, BM);
+    float dotBCBC = dot(BC, BC);
+
+    return 0 <= dotABAM && dotABAM <= dotABAB && 0 <= dotBCBM && dotBCBM <= dotBCBC;
+
+    // javascript for reference from the link above
+    /*
+        function pointInRectangle(m, r) {
+            var AB = vector(r.A, r.B);
+            var AM = vector(r.A, m);
+            var BC = vector(r.B, r.C);
+            var BM = vector(r.B, m);
+            var dotABAM = dot(AB, AM);
+            var dotABAB = dot(AB, AB);
+            var dotBCBM = dot(BC, BM);
+            var dotBCBC = dot(BC, BC);
+            return 0 <= dotABAM && dotABAM <= dotABAB && 0 <= dotBCBM && dotBCBM <= dotBCBC;
+        }
+
+        function vector(p1, p2) {
+            return {
+                    x: (p2.x - p1.x),
+                    y: (p2.y - p1.y)
+            };
+        }
+
+        function dot(u, v) {
+            return u.x * v.x + u.y * v.y; 
+        }
+
+        var r = {
+            A: {x: 50, y: 0},
+            B: {x: 0, y: 20},
+            C: {x: 10, y: 50},
+            D: {x: 60, y: 30}
+        };
+
+        var m = {x: 40, y: 20};
+
+        pointInRectangle(m, r); // returns true.
+    */
 }
 
+// show the bounding rectangle for an object (that is not rotated)
 void debug_entity_collision_rect(StaticEntity* static_entity) {
     scenery[0].entity.pos[0] =  static_entity->entity.pos[0] + get_static_entity_width(static_entity) / 2;
-    scenery[0].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_height(static_entity) / 2;
+    scenery[0].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_depth(static_entity) / 2;
     scenery[0].entity.pos[2] =  static_entity->entity.pos[2];
 
     scenery[1].entity.pos[0] =  static_entity->entity.pos[0] - get_static_entity_width(static_entity) / 2;
-    scenery[1].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_height(static_entity) / 2;
+    scenery[1].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_depth(static_entity) / 2;
     scenery[1].entity.pos[2] =  static_entity->entity.pos[2];
 
     scenery[2].entity.pos[0] =  static_entity->entity.pos[0] - get_static_entity_width(static_entity) / 2;
-    scenery[2].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_height(static_entity) / 2;
+    scenery[2].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_depth(static_entity) / 2;
     scenery[2].entity.pos[2] =  static_entity->entity.pos[2];
 
     scenery[3].entity.pos[0] =  static_entity->entity.pos[0] + get_static_entity_width(static_entity) / 2;
-    scenery[3].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_height(static_entity) / 2;
+    scenery[3].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_depth(static_entity) / 2;
     scenery[3].entity.pos[2] =  static_entity->entity.pos[2];
 }
 
@@ -790,6 +864,11 @@ float distance(float* pos1, float* pos2) {
 }
 
 void detect_collisions() {
+    StaticEntity *shack = &scenery[SCENERY_COUNT - 1];
+    if ( pt_in_rect(&nick.entity.pos, &scenery[SCENERY_COUNT - 1], get_static_entity_width(shack), get_static_entity_depth(shack))) {
+        nick.entity.speed = -800;
+        set_entity_state(&nick, FALLBACK);
+    }
     if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
         nick.entity.speed = -800;
         set_entity_state(&nick, FALLBACK);
