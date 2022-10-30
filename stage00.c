@@ -710,6 +710,63 @@ void draw_static_entity(StaticEntity *static_entity){
     gSPDisplayList(glistp++, static_entity->mesh);
 }
 
+void set_pt(float* dest, float* src) {
+    dest[0] = src[0];
+    dest[1] = src[1];
+    dest[2] = src[2];
+}
+
+int get_static_entity_width(StaticEntity* static_entity) {
+    if (static_entity->mesh == gfx_shack) return 800;
+}
+
+int get_static_entity_height(StaticEntity* static_entity) {
+    if (static_entity->mesh == gfx_shack) return 700;
+}
+
+// https://stackoverflow.com/questions/2752725/finding-whether-a-point-lies-inside-a-rectangle-or-not/37865332#37865332
+// currently only looks at x and y, despite passing in 3d points
+int pt_in_rect(float* pos1, Entity *entity) {
+    return 1;
+}
+
+void debug_entity_collision_rect(StaticEntity* static_entity) {
+    scenery[0].entity.pos[0] =  static_entity->entity.pos[0] + get_static_entity_width(static_entity) / 2;
+    scenery[0].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_height(static_entity) / 2;
+    scenery[0].entity.pos[2] =  static_entity->entity.pos[2];
+
+    scenery[1].entity.pos[0] =  static_entity->entity.pos[0] - get_static_entity_width(static_entity) / 2;
+    scenery[1].entity.pos[1] =  static_entity->entity.pos[1] + get_static_entity_height(static_entity) / 2;
+    scenery[1].entity.pos[2] =  static_entity->entity.pos[2];
+
+    scenery[2].entity.pos[0] =  static_entity->entity.pos[0] - get_static_entity_width(static_entity) / 2;
+    scenery[2].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_height(static_entity) / 2;
+    scenery[2].entity.pos[2] =  static_entity->entity.pos[2];
+
+    scenery[3].entity.pos[0] =  static_entity->entity.pos[0] + get_static_entity_width(static_entity) / 2;
+    scenery[3].entity.pos[1] =  static_entity->entity.pos[1] - get_static_entity_height(static_entity) / 2;
+    scenery[3].entity.pos[2] =  static_entity->entity.pos[2];
+}
+
+float distance(float* pos1, float* pos2) {
+    return 1 / Q_rsqrt( 
+          (pos1[0] - pos2[0]) * (pos1[0] - pos2[0])
+        + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
+        + (pos1[2] - pos2[2]) * (pos1[2] - pos2[2])
+    );
+}
+
+void detect_collisions() {
+    if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
+        nick.entity.speed = -800;
+        set_entity_state(&nick, FALLBACK);
+    }
+
+    if ( distance(candy.entity.pos, willy.entity.pos) < 150) {
+        willy.entity.vertical_speed = 4000;
+        set_entity_state(&willy, FALLBACK);
+    }
+}
 
 /*==============================
     draw_world
@@ -739,12 +796,12 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     set_light(light);
 
     //draw the entities
-    axis.entity.pos[0] = willy.entity.pos[0];
-    axis.entity.pos[1] = willy.entity.pos[1];
-    axis.entity.pos[2] = willy.entity.pos[2];
+    set_pt(axis.entity.pos, willy.entity.pos);
     draw_static_entity(&axis);
     draw_static_entity(&ground);
     draw_static_entity(&candy);
+
+    debug_entity_collision_rect(&scenery[SCENERY_COUNT - 1]);
 
     for (int i = 0; i < SCENERY_COUNT; i++) {
         draw_static_entity(&scenery[i]);
@@ -764,6 +821,7 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     osWritebackDCache(&camera->projection, sizeof(&camera->projection));
     osWritebackDCache(&camera->modeling, sizeof(camera->modeling));
 }
+
 
 
 /*==============================
@@ -822,26 +880,6 @@ void stage00_init(void){
     #else
         animspeed = 0.5;
     #endif
-}
-
-float distance(float* pos1, float* pos2) {
-    return 1 / Q_rsqrt( 
-          (pos1[0] - pos2[0]) * (pos1[0] - pos2[0])
-        + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
-        + (pos1[2] - pos2[2]) * (pos1[2] - pos2[2])
-    );
-}
-
-void detect_collisions() {
-    if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
-        nick.entity.speed = -800;
-        set_entity_state(&nick, FALLBACK);
-    }
-
-    if ( distance(candy.entity.pos, willy.entity.pos) < 150) {
-        willy.entity.vertical_speed = 4000;
-        set_entity_state(&willy, FALLBACK);
-    }
 }
 
 /*==============================
