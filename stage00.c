@@ -131,7 +131,7 @@ StaticEntity axis = {
     mesh: gfx_axis,
 };
 
-#define GROUND_SEGMENTS_COUNT 9
+#define GROUND_SEGMENTS_COUNT 25 
 StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
 
 StaticEntity candy = {
@@ -840,16 +840,16 @@ void stage00_init(void){
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
 
     sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
-    sausage64_set_animcallback(&zombie.helper, nick_animcallback);
+    sausage64_set_animcallback(&zombie.helper, NULL);
 
     // setup the ground
 
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            ground_segments[i * 3 + j].entity.pos[0] =  -i * 500 + 2 * 500;
-            ground_segments[i * 3 + j].entity.pos[1] =  -j * 500 + 2 * 500;
-            ground_segments[i * 3 + j].entity.pos[2] = 80;
-            ground_segments[i * 3 + j].mesh = gfx_ground;
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            ground_segments[i * 5 + j].entity.pos[0] =  -i * 500 + 3 * 500;
+            ground_segments[i * 5 + j].entity.pos[1] =  -j * 500 + 3 * 500;
+            ground_segments[i * 5 + j].entity.pos[2] = 80;
+            ground_segments[i * 5 + j].mesh = gfx_ground;
         }
     }
     
