@@ -82,7 +82,7 @@ static Gfx gfx_nick_chest[] = {
     gsDPSetTextureFilter(G_TF_BILERP),
     gsSPClearGeometryMode(0xFFFFFFFF),
     gsSPSetGeometryMode(G_SHADE | G_ZBUFFER | G_CULL_BACK | G_SHADING_SMOOTH | G_LIGHTING),
-    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 1, 4, 0),
     gsSP2Triangles(3, 5, 6, 0, 7, 8, 9, 0),
@@ -104,7 +104,7 @@ static Gfx gfx_nick_chest[] = {
     gsSP2Triangles(18, 23, 19, 0, 7, 23, 20, 0),
     gsSP2Triangles(21, 16, 15, 0, 8, 22, 14, 0),
     gsSP2Triangles(4, 14, 17, 0, 22, 17, 14, 0),
-    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(7, 12, 24, 0, 24, 12, 25, 0),
     gsSP2Triangles(12, 5, 25, 0, 5, 13, 25, 0),
@@ -209,7 +209,7 @@ static Vtx vtx_nick_uarm_L[] = {
 
 static Gfx gfx_nick_uarm_L[] = {
     gsSPVertex(vtx_nick_uarm_L+0, 32, 0),
-    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(5, 4, 6, 0, 7, 6, 8, 0),
@@ -235,7 +235,7 @@ static Gfx gfx_nick_uarm_L[] = {
     gsSP1Triangle(27, 30, 28, 0),
 
     gsSPVertex(vtx_nick_uarm_L+63, 28, 0),
-    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),
@@ -342,7 +342,7 @@ static Vtx vtx_nick_uarm_R[] = {
 
 static Gfx gfx_nick_uarm_R[] = {
     gsSPVertex(vtx_nick_uarm_R+0, 32, 0),
-    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(4, 6, 5, 0, 7, 8, 6, 0),
@@ -368,7 +368,7 @@ static Gfx gfx_nick_uarm_R[] = {
     gsSP1Triangle(27, 29, 30, 0),
 
     gsSPVertex(vtx_nick_uarm_R+63, 28, 0),
-    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),
@@ -924,7 +924,7 @@ static Vtx vtx_nick_head[] = {
 
 static Gfx gfx_nick_head[] = {
     gsSPVertex(vtx_nick_head+0, 18, 0),
-    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(eye, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),
@@ -958,7 +958,7 @@ static Gfx gfx_nick_head[] = {
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),
 
     gsSPVertex(vtx_nick_head+120, 30, 0),
-    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),
@@ -1435,7 +1435,7 @@ static Gfx gfx_nick_hip[] = {
     gsSP2Triangles(9, 13, 12, 0, 11, 10, 13, 0),
 
     gsSPVertex(vtx_nick_hip+14, 26, 0),
-    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(4, 2, 5, 0, 6, 7, 8, 0),
@@ -1660,7 +1660,7 @@ static Vtx vtx_nick_torax[] = {
 
 static Gfx gfx_nick_torax[] = {
     gsSPVertex(vtx_nick_torax+0, 14, 0),
-    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(shirt, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(5, 0, 2, 0, 0, 6, 1, 0),
