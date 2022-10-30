@@ -131,8 +131,6 @@ StaticEntity axis = {
     mesh: gfx_axis,
 };
 
-#define GROUND_SEGMENTS_COUNT 9
-StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
 
 StaticEntity candy = {
     entity: {
@@ -762,9 +760,7 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     //draw the entities
     draw_static_entity(&axis);
-    for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
-        draw_static_entity(&ground_segments[i]);
-    }
+    draw_static_entity(&ground);
     draw_static_entity(&candy);
     draw_static_entity(&pumpkin);
     draw_static_entity(&gravestone);
@@ -841,18 +837,6 @@ void stage00_init(void){
 
     sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
     sausage64_set_animcallback(&zombie.helper, nick_animcallback);
-
-    // setup the ground
-
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            ground_segments[i * 3 + j].entity.pos[0] =  -i * 500 + 2 * 500;
-            ground_segments[i * 3 + j].entity.pos[1] =  -j * 500 + 2 * 500;
-            ground_segments[i * 3 + j].entity.pos[2] = 80;
-            ground_segments[i * 3 + j].mesh = gfx_ground;
-        }
-    }
-    
 
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
