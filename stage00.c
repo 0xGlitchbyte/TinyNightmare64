@@ -16,7 +16,6 @@
 #include "palette.h"
 #include "nick.h"
 #include "willy.h"
-#include "zombie.h"
 #include "ground_block.h"
 #include "candy.h"
 #include "pumpkin.h"
@@ -113,22 +112,18 @@ AnimatedEntity willy = {
 
 Mtx willyMtx[MESHCOUNT_willy];
 
-
-AnimatedEntity zombie = {
-    entity: {
-        pos: { 400, 400, 0},
-        yaw: 180,
-        type: NICK 
-    }
-};
-
-Mtx zombieMtx[MESHCOUNT_zombie];
-
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
     },
     mesh: gfx_axis,
+};
+
+StaticEntity ground = {
+    entity: {
+        pos: { -500, 500, 80},
+    },
+    mesh: gfx_ground,
 };
 
 StaticEntity candy = {
@@ -138,27 +133,17 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-
-#define WIDTH_GROUND_SEGMENTS 5
-#define HEIGHT_GROUND_SEGMENTS 5
-#define GROUND_SEGMENTS_COUNT 25  // this should be the previous two multiplied together
-StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
-
-#define SCENERY_COUNT 5
+#define SCENERY_COUNT 9
 StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { -300, 300, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -300, 350, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -240, 350, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { -120, 250, 30}, },mesh: gfx_pumpkin},
     {entity: { pos: { 300, 300, 30}, },mesh: gfx_gravestone},
     {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
     {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
-    {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2}
-};
-
-
-StaticEntity shack = {
-    entity: {
-        pos: { 1000, 1000, 0},
-    },
-    mesh: gfx_shack,
+    {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2},
+    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack}
 };
 
 // USB
@@ -551,8 +536,6 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
     if (new_state == WALK && curr_state == IDLE) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
-        // TODO - just to make the zombie move, gets overriden by controller for user
-        animated_entity->entity.speed = 400;
     }
     if (new_state == RUN && 
             ( curr_state == IDLE || curr_state == WALK)) {
@@ -738,20 +721,18 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     set_light(light);
 
     //draw the entities
-    draw_static_entity(&axis);
-    for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
-        draw_static_entity(&ground_segments[i]);
-    }
+    //draw_static_entity(&axis);
+    draw_static_entity(&ground);
+    draw_static_entity(&candy);
 
     for (int i = 0; i < SCENERY_COUNT; i++) {
         draw_static_entity(&scenery[i]);
     }
-    draw_static_entity(&shack);
+
 
     draw_animated_entity(&nick);
 
     draw_animated_entity(&willy);
-    draw_animated_entity(&zombie);
 
 
     // Syncronize the RCP and CPU and specify that our display list has ended
@@ -813,26 +794,7 @@ void stage00_init(void){
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
-
-    sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
-    sausage64_set_animcallback(&zombie.helper, NULL);
-
-    // the side length of one panel of ground
-    int ground_size = 9000;
-    // these are declared about with the ground_segments array
-    // it is the size of the grid of ground tiles we are creating
-    // WIDTH_GROUND_SEGMENTS, HEIGHT_GROUND_SEGMENTS 
-    // setup the ground
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size;// - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size;// - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 800;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].mesh = gfx_ground;
-        }
-    }
     
-
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
         animspeed = 0.66;
@@ -862,15 +824,12 @@ void stage00_update(void){
 
     move_animated_entity_one_frame(&nick);
     move_animated_entity_one_frame(&willy);
-    move_animated_entity_one_frame(&zombie);
     move_entity_one_frame(&candy.entity);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
     
     sausage64_advance_anim(&nick.helper, animspeed);
-
-    sausage64_advance_anim(&zombie.helper, animspeed);
 
     // make willy do different stuff    
 
@@ -880,16 +839,6 @@ void stage00_update(void){
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
-
-
-    // make nick do different stuff    
-
-    if (time_data.cur_frame % 1356 < 30) set_entity_state(&zombie, WALK);
-    else if (time_data.cur_frame % 1356 < 35) zombie.entity.yaw += 3 * (time_data.cur_frame % 10);
-    else if (time_data.cur_frame % 1356 < 40) zombie.entity.yaw -= 3 * (time_data.cur_frame % 10);
-    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
-    else if (time_data.cur_frame % 1356 < 42) set_entity_state(&zombie, JUMP);
-    else if (time_data.cur_frame % 1356 < 44) set_entity_state(&zombie, IDLE);
 }
 
 
