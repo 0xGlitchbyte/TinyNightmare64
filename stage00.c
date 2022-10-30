@@ -256,6 +256,7 @@ void move_entity_analog_stick(Entity *entity, Camera camera, NUContData cont[1])
     curr_nick_state = curr_state;
     if (curr_state != ROLL
         && curr_state != JUMP
+        && curr_state != FALLBACK 
         && curr_state != FALL
         && curr_state != MIDAIR 
         ) {
@@ -492,6 +493,7 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
     if (animated_entity->entity.type == NICK) {
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_nick_jump);
         if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_nick_roll);
+        if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_nick_fallback);
         if (new_state == FALL) sausage64_set_anim(helper, ANIMATION_nick_fall);
         if (new_state == MIDAIR) sausage64_set_anim(helper, ANIMATION_nick_midair);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_nick_idle);
@@ -542,7 +544,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
         // TODO - just to make willy move, gets overriden by controller for user
-        animated_entity->entity.speed = 800;
+        animated_entity->entity.speed = 200;
     }
 
     if (new_state == IDLE
@@ -550,6 +552,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == RUN 
               || curr_state == ROLL 
               || curr_state == FALL 
+              || curr_state == FALLBACK
               || curr_state == JUMP 
             )
             ) {
@@ -565,6 +568,12 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
 
     if (new_state == FALL) {
         entity->state = new_state;
+        update_animation_based_on_state(animated_entity);
+    }
+
+    if (new_state == FALLBACK) {
+        entity->state = new_state;
+        animated_entity->entity.speed = -800;
         update_animation_based_on_state(animated_entity);
     }
 }
@@ -593,6 +602,7 @@ void handle_controller_input(NUContData cont[1], AnimatedEntity* entity){
     if (cont->stick_x == 0 && cont->stick_y == 0
         && entity->entity.state != JUMP 
         && entity->entity.state != ROLL
+        && entity->entity.state != FALLBACK
         && entity->entity.state != FALL 
         && entity->entity.state != MIDAIR 
         ) {
@@ -620,6 +630,7 @@ void when_animation_completes(AnimatedEntity * animated_entity) {
             set_entity_state(animated_entity, IDLE);
             break;
         case ROLL:
+        case FALLBACK:
             set_entity_state(animated_entity, IDLE);
             animated_entity->entity.speed = 0;
             break;
@@ -721,7 +732,10 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     set_light(light);
 
     //draw the entities
-    //draw_static_entity(&axis);
+    axis.entity.pos[0] = willy.entity.pos[0];
+    axis.entity.pos[1] = willy.entity.pos[1];
+    axis.entity.pos[2] = willy.entity.pos[2];
+    draw_static_entity(&axis);
     draw_static_entity(&ground);
     draw_static_entity(&candy);
 
@@ -803,6 +817,20 @@ void stage00_init(void){
     #endif
 }
 
+float distance(float* pos1, float* pos2) {
+    return 1 / Q_rsqrt( 
+          (pos1[0] - pos2[0]) * (pos1[0] - pos2[0])
+        + (pos1[1] - pos2[1]) * (pos1[1] - pos2[1])
+        + (pos1[2] - pos2[2]) * (pos1[2] - pos2[2])
+    );
+}
+
+void detect_collisions() {
+    if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
+        set_entity_state(&nick, FALLBACK);
+    }
+}
+
 /*==============================
     stage00_update
     Update stage variables every frame
@@ -831,13 +859,15 @@ void stage00_update(void){
     
     sausage64_advance_anim(&nick.helper, animspeed);
 
+    detect_collisions();
+
     // make willy do different stuff    
 
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
-    else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
+    //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
 }
 
