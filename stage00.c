@@ -131,9 +131,6 @@ StaticEntity axis = {
     mesh: gfx_axis,
 };
 
-#define GROUND_SEGMENTS_COUNT 25 
-StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
-
 StaticEntity candy = {
     entity: {
         pos: { -500, 500, 150},
@@ -141,41 +138,21 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-StaticEntity pumpkin = {
-    entity: {
-        pos: { -300, 300, 30},
-    },
-    mesh: gfx_pumpkin,
+
+#define WIDTH_GROUND_SEGMENTS 5
+#define HEIGHT_GROUND_SEGMENTS 5
+#define GROUND_SEGMENTS_COUNT 25  // this should be the previous two multiplied together
+StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
+
+#define SCENERY_COUNT 5
+StaticEntity scenery[SCENERY_COUNT]= {
+    {entity: { pos: { -300, 300, 30}, },mesh: gfx_pumpkin},
+    {entity: { pos: { 300, 300, 30}, },mesh: gfx_gravestone},
+    {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
+    {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
+    {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2}
 };
 
-
-StaticEntity gravestone = {
-    entity: {
-        pos: { 300, 300, 0},
-    },
-    mesh: gfx_gravestone,
-};
-
-StaticEntity gravestone_cross = {
-    entity: {
-        pos: { 300, -300, 0},
-    },
-    mesh: gfx_gravestone_cross,
-};
-
-StaticEntity gravestone_flat = {
-    entity: {
-        pos: { 300, -600, 0},
-    },
-    mesh: gfx_gravestone_flat,
-};
-
-StaticEntity gravestone_flat_2 = {
-    entity: {
-        pos: { 300, 500, 0},
-    },
-    mesh: gfx_gravestone_flat_2,
-};
 
 StaticEntity shack = {
     entity: {
@@ -765,12 +742,10 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
         draw_static_entity(&ground_segments[i]);
     }
-    draw_static_entity(&candy);
-    draw_static_entity(&pumpkin);
-    draw_static_entity(&gravestone);
-    draw_static_entity(&gravestone_cross);
-    draw_static_entity(&gravestone_flat);
-    draw_static_entity(&gravestone_flat_2);
+
+    for (int i = 0; i < SCENERY_COUNT; i++) {
+        draw_static_entity(&scenery[i]);
+    }
     draw_static_entity(&shack);
 
     draw_animated_entity(&nick);
@@ -842,14 +817,18 @@ void stage00_init(void){
     sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
     sausage64_set_animcallback(&zombie.helper, NULL);
 
+    // the side length of one panel of ground
+    int ground_size = 9000;
+    // these are declared about with the ground_segments array
+    // it is the size of the grid of ground tiles we are creating
+    // WIDTH_GROUND_SEGMENTS, HEIGHT_GROUND_SEGMENTS 
     // setup the ground
-
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
-            ground_segments[i * 5 + j].entity.pos[0] =  -i * 500 + 3 * 500;
-            ground_segments[i * 5 + j].entity.pos[1] =  -j * 500 + 3 * 500;
-            ground_segments[i * 5 + j].entity.pos[2] = 80;
-            ground_segments[i * 5 + j].mesh = gfx_ground;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size;// - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size;// - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 800;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].mesh = gfx_ground;
         }
     }
     
