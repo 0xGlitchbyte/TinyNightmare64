@@ -931,7 +931,7 @@ static Gfx gfx_zombie_head[] = {
     gsSP2Triangles(12, 13, 14, 0, 15, 16, 17, 0),
 
     gsSPVertex(vtx_zombie_head+18, 30, 0),
-    gsDPLoadTextureBlock(hair, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPLoadTextureBlock(skin, G_IM_FMT_RGBA, G_IM_SIZ_16b, 32, 32, 0, G_TX_MIRROR, G_TX_MIRROR, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
     gsDPPipeSync(),
     gsSP2Triangles(0, 1, 2, 0, 3, 4, 5, 0),
     gsSP2Triangles(6, 7, 8, 0, 9, 10, 11, 0),

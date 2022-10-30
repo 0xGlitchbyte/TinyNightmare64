@@ -16,6 +16,7 @@
 #include "palette.h"
 #include "nick.h"
 #include "willy.h"
+#include "zombie.h"
 #include "ground_block.h"
 #include "candy.h"
 #include "pumpkin.h"
@@ -112,18 +113,22 @@ AnimatedEntity willy = {
 
 Mtx willyMtx[MESHCOUNT_willy];
 
+
+AnimatedEntity zombie = {
+    entity: {
+        pos: { 400, 400, 0},
+        yaw: 180,
+        type: NICK 
+    }
+};
+
+Mtx zombieMtx[MESHCOUNT_zombie];
+
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
     },
     mesh: gfx_axis,
-};
-
-StaticEntity ground = {
-    entity: {
-        pos: { -500, 500, 80},
-    },
-    mesh: gfx_ground,
 };
 
 
@@ -567,6 +572,8 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
     if (new_state == WALK && curr_state == IDLE) {
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
+        // TODO - just to make the zombie move, gets overriden by controller for user
+        animated_entity->entity.speed = 400;
     }
     if (new_state == RUN && 
             ( curr_state == IDLE || curr_state == WALK)) {
@@ -765,6 +772,7 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     draw_animated_entity(&nick);
 
     draw_animated_entity(&willy);
+    draw_animated_entity(&zombie);
 
 
     // Syncronize the RCP and CPU and specify that our display list has ended
@@ -826,7 +834,10 @@ void stage00_init(void){
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
-    
+
+    sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
+    sausage64_set_animcallback(&zombie.helper, nick_animcallback);
+
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
         animspeed = 0.66;
@@ -856,12 +867,15 @@ void stage00_update(void){
 
     move_animated_entity_one_frame(&nick);
     move_animated_entity_one_frame(&willy);
+    move_animated_entity_one_frame(&zombie);
     move_entity_one_frame(&candy.entity);
    
     // Advacnce animations
     sausage64_advance_anim(&willy.helper, animspeed);
     
     sausage64_advance_anim(&nick.helper, animspeed);
+
+    sausage64_advance_anim(&zombie.helper, animspeed);
 
     // make willy do different stuff    
 
@@ -871,6 +885,16 @@ void stage00_update(void){
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
+
+
+    // make nick do different stuff    
+
+    if (time_data.cur_frame % 1356 < 30) set_entity_state(&zombie, WALK);
+    else if (time_data.cur_frame % 1356 < 35) zombie.entity.yaw += 3 * (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 1356 < 40) zombie.entity.yaw -= 3 * (time_data.cur_frame % 10);
+    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
+    else if (time_data.cur_frame % 1356 < 42) set_entity_state(&zombie, JUMP);
+    else if (time_data.cur_frame % 1356 < 44) set_entity_state(&zombie, IDLE);
 }
 
 
