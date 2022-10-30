@@ -23,6 +23,17 @@
 #include "gravestone_cross.h"
 #include "gravestone_flat.h"
 #include "gravestone_flat_2.h"
+
+#include "tree1clear.h"
+#include "tree1grey.h"
+#include "tree1dark.h"
+#include "tree2clear.h"
+#include "tree2grey.h"
+#include "tree2dark.h"
+#include "tree3.h"
+#include "tree4.h"
+#include "tree5.h"
+
 #include "shack.h"
 #include "axisMdl.h"
 #include "debug.h"
@@ -133,7 +144,7 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-#define SCENERY_COUNT 9
+#define SCENERY_COUNT 14
 StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { -300, 300, 30}, },mesh: gfx_pumpkin},
     {entity: { pos: { -300, 350, 30}, },mesh: gfx_pumpkin},
@@ -143,7 +154,12 @@ StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
     {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
     {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2},
-    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack}
+    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack},
+    {entity: { pos: { -200, 400, 30}, },mesh: gfx_tree1clear},
+    {entity: { pos: { -100, 800, 30}, },mesh: gfx_tree2clear},
+    {entity: { pos: { 0, -300, 30}, },mesh: gfx_tree3},
+    {entity: { pos: { -600, 200, 30}, },mesh: gfx_tree4},
+    {entity: { pos: { -1500, 900, 30}, },mesh: gfx_tree5}
 };
 
 // USB
