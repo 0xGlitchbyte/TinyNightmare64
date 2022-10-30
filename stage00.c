@@ -682,13 +682,16 @@ void draw_animated_entity(AnimatedEntity *animated_entity){
     guRotate(&animated_entity->entity.rot_mtx[0], animated_entity->entity.pitch, 1, 0, 0);
     guRotate(&animated_entity->entity.rot_mtx[1], animated_entity->entity.yaw, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
 
     sausage64_drawmodel(&glistp, &animated_entity->helper);
-}
 
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
+}
 
 /*==============================
     draw_static_entity
@@ -701,11 +704,15 @@ void draw_static_entity(StaticEntity *static_entity){
     guRotate(&static_entity->entity.rot_mtx[0], 0, 1, 0, 0);
     guRotate(&static_entity->entity.rot_mtx[1], 0, 0, 0, 1);
 
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_PUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
-    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_NOPUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     
     gSPDisplayList(glistp++, static_entity->mesh);
+
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
 }
 
 
