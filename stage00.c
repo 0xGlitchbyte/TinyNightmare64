@@ -918,9 +918,51 @@ void detect_collisions() {
         // calculate if the next frame will move us out of the box
         float new_pos[3] = {};
         float frame_distance = time_data.frame_duration * entity->speed;
-        entity->pos[0] -= frame_distance * sin(rad(entity->yaw));
-        entity->pos[1] += frame_distance * cos(rad(entity->yaw));
-        nick.entity.speed = 0;
+        new_pos[0] = entity->pos[0] + frame_distance * sin(rad(entity->yaw));
+        new_pos[1] = entity->pos[1] - frame_distance * cos(rad(entity->yaw));
+
+
+        float A[3]; float B[3]; float C[3]; float D[3];
+
+        int width = get_static_entity_width(shack);
+        int depth = get_static_entity_depth(shack);
+
+        A[0] = entity->pos[0] + width / 2;
+        A[1] = entity->pos[1] + depth / 2;
+        
+        B[0] = entity->pos[0] - width / 2;
+        B[1] = entity->pos[1] + depth / 2;
+        
+        C[0] = entity->pos[0] - width / 2;
+        C[1] = entity->pos[1] - depth / 2;
+        
+        D[0] = entity->pos[0] + width / 2;
+        D[1] = entity->pos[1] - depth / 2;
+
+        float min_dist_to_wall_old = 
+        min(
+            minimum_distance(A, D, nick.entity.pos),
+            min(
+                minimum_distance(C, D, nick.entity.pos),
+                min(
+                    minimum_distance(A, B, nick.entity.pos), 
+                    minimum_distance(B, C, nick.entity.pos)
+                )));
+
+        float min_dist_to_wall_new = 
+        min(
+            minimum_distance(A, D, new_pos),
+            min(
+                minimum_distance(C, D, new_pos),
+                min(
+                    minimum_distance(A, B, new_pos), 
+                    minimum_distance(B, C, new_pos)
+                )));
+
+        if (pt_in_rect(new_pos, &scenery[SCENERY_COUNT - 1].entity, get_static_entity_width(shack), get_static_entity_depth(shack))
+        ) {
+            nick.entity.speed = 0;
+        }
     }
     if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
         nick.entity.speed = -800;
