@@ -910,6 +910,9 @@ float minimum_distance(float *v, float *w, float *p) {
   return distance_2d(p, projection);
 }
 
+float min_dist_to_wall_old;
+float min_dist_to_wall_new;
+
 void detect_collisions() {
     StaticEntity *shack = &scenery[SCENERY_COUNT - 1];
     if ( pt_in_rect(nick.entity.pos, &scenery[SCENERY_COUNT - 1].entity, get_static_entity_width(shack), get_static_entity_depth(shack))) {
@@ -939,7 +942,7 @@ void detect_collisions() {
         D[0] = entity->pos[0] + width / 2;
         D[1] = entity->pos[1] - depth / 2;
 
-        float min_dist_to_wall_old = 
+        min_dist_to_wall_old = 
         min(
             minimum_distance(A, D, nick.entity.pos),
             min(
@@ -949,7 +952,7 @@ void detect_collisions() {
                     minimum_distance(B, C, nick.entity.pos)
                 )));
 
-        float min_dist_to_wall_new = 
+        min_dist_to_wall_new = 
         min(
             minimum_distance(A, D, new_pos),
             min(
@@ -961,7 +964,9 @@ void detect_collisions() {
 
         if (pt_in_rect(new_pos, &scenery[SCENERY_COUNT - 1].entity, get_static_entity_width(shack), get_static_entity_depth(shack))
         ) {
-            nick.entity.speed = 0;
+            if (min_dist_to_wall_new != min_dist_to_wall_old) {
+                nick.entity.speed = 0;
+            }
         }
     }
     if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
@@ -1042,10 +1047,10 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy state %d", willy.entity.state);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "min old %d", (int) min_dist_to_wall_old * 100);
     
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy anim state %d", sausage64_get_currentanim(&willy.helper));
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "min new %d", (int) min_dist_to_wall_new * 100);
     /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
