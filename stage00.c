@@ -132,7 +132,8 @@ StaticEntity axis = {
 
 StaticEntity ground = {
     entity: {
-        pos: { -500, 500, 80},
+        pos: { -500, 500, 16200},
+        scale: 200,
     },
     mesh: gfx_ground,
 };
@@ -140,26 +141,27 @@ StaticEntity ground = {
 StaticEntity candy = {
     entity: {
         pos: { -500, 500, 150},
+        scale: 1,
     },
     mesh: gfx_candy,
 };
 
 #define SCENERY_COUNT 14
 StaticEntity scenery[SCENERY_COUNT]= {
-    {entity: { pos: { -300, 300, 30}, },mesh: gfx_pumpkin},
-    {entity: { pos: { -300, 350, 30}, },mesh: gfx_pumpkin},
-    {entity: { pos: { -240, 350, 30}, },mesh: gfx_pumpkin},
-    {entity: { pos: { -120, 250, 30}, },mesh: gfx_pumpkin},
-    {entity: { pos: { 300, 300, 30}, },mesh: gfx_gravestone},
-    {entity: { pos: { 300, -300, 30}, },mesh: gfx_gravestone_cross},
-    {entity: { pos: { 300, -600, 30}, },mesh: gfx_gravestone_flat},
-    {entity: { pos: { 300, 500, 30}, },mesh: gfx_gravestone_flat_2},
-    {entity: { pos: { 1000, 1000, 0}, },mesh: gfx_shack},
-    {entity: { pos: { -200, 400, 30}, },mesh: gfx_tree1clear},
-    {entity: { pos: { -100, 800, 30}, },mesh: gfx_tree2clear},
-    {entity: { pos: { 0, -300, 30}, },mesh: gfx_tree3},
-    {entity: { pos: { -600, 200, 30}, },mesh: gfx_tree4},
-    {entity: { pos: { -1500, 900, 30}, },mesh: gfx_tree5}
+    {entity: { pos: { -300, 300, 30}, scale: 1 },mesh: gfx_pumpkin},
+    {entity: { pos: { -300, 350, 30}, scale: 1},mesh: gfx_pumpkin},
+    {entity: { pos: { -240, 350, 30}, scale: 1},mesh: gfx_pumpkin},
+    {entity: { pos: { -120, 250, 30}, scale: 1},mesh: gfx_pumpkin},
+    {entity: { pos: { 300, 300, 30}, scale: 1},mesh: gfx_gravestone},
+    {entity: { pos: { 300, -300, 30}, scale: 1},mesh: gfx_gravestone_cross},
+    {entity: { pos: { 300, -600, 30}, scale: 1},mesh: gfx_gravestone_flat},
+    {entity: { pos: { 300, 500, 30}, scale: 1},mesh: gfx_gravestone_flat_2},
+    {entity: { pos: { 2000, 2000, 0}, scale: 3, yaw: 50 },mesh: gfx_shack},
+    {entity: { pos: { -200, 400, 30}, scale: 15 },mesh: gfx_tree1clear},
+    {entity: { pos: { -100, 800, 30}, scale: 15 },mesh: gfx_tree2clear},
+    {entity: { pos: { 0, -300, 30}, scale: 15 }, mesh: gfx_tree3},
+    {entity: { pos: { -600, 200, 30}, scale: 15 },mesh: gfx_tree4},
+    {entity: { pos: { -1500, 900, 30}, scale: 15 },mesh: gfx_tree5}
 };
 
 // USB
@@ -703,13 +705,17 @@ void draw_static_entity(StaticEntity *static_entity){
     guTranslate(&static_entity->entity.pos_mtx, static_entity->entity.pos[0], static_entity->entity.pos[1], static_entity->entity.pos[2]);
     guRotate(&static_entity->entity.rot_mtx[0], 0, 1, 0, 0);
     guRotate(&static_entity->entity.rot_mtx[1], 0, 0, 0, 1);
+    float scale = static_entity->entity.scale;
+    guScale(&static_entity->entity.scale_mtx, scale, scale, scale);
 
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&static_entity->entity.scale_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     
     gSPDisplayList(glistp++, static_entity->mesh);
 
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
@@ -817,7 +823,7 @@ void stage00_init(void){
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
-    
+
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
         animspeed = 0.66;
