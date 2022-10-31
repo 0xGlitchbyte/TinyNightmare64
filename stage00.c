@@ -34,6 +34,9 @@
 #include "tree4.h"
 #include "tree5.h"
 
+#include "entrance.h"
+#include "fence.h"
+
 #include "shack.h"
 #include "axisMdl.h"
 #include "debug.h"
@@ -146,7 +149,7 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-#define SCENERY_COUNT 18
+#define SCENERY_COUNT 20
 StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { -300, 300, 30}, scale: 1},mesh: gfx_pumpkin},
     {entity: { pos: { -300, 350, 30}, scale: 1},mesh: gfx_pumpkin},
@@ -165,7 +168,10 @@ StaticEntity scenery[SCENERY_COUNT]= {
     {entity: { pos: { -100, 800, 30}, scale: 15 },mesh: gfx_tree2clear},
     {entity: { pos: { 0, -300, 30}, scale: 15 }, mesh: gfx_tree3},
     {entity: { pos: { -600, 200, 30}, scale: 15 },mesh: gfx_tree4},
-    {entity: { pos: { -1500, 900, 30}, scale: 15 },mesh: gfx_tree5}
+    {entity: { pos: { -1500, 900, 30}, scale: 15 },mesh: gfx_tree5},
+
+    {entity: { pos: { 0, -1200, 30}, scale: 2, yaw: 180 },mesh: gfx_fence},
+    {entity: { pos: { -1500, -1200, 30}, scale: 2 },mesh: gfx_entrance}
 };
 
 // USB
@@ -725,8 +731,8 @@ void draw_animated_entity(AnimatedEntity *animated_entity){
 void draw_static_entity(StaticEntity *static_entity){
 
     guTranslate(&static_entity->entity.pos_mtx, static_entity->entity.pos[0], static_entity->entity.pos[1], static_entity->entity.pos[2]);
-    guRotate(&static_entity->entity.rot_mtx[0], 0, 1, 0, 0);
-    guRotate(&static_entity->entity.rot_mtx[1], 0, 0, 0, 1);
+    guRotate(&static_entity->entity.rot_mtx[0], static_entity->entity.pitch, 1, 0, 0);
+    guRotate(&static_entity->entity.rot_mtx[1], static_entity->entity.yaw, 0, 0, 1);
     float scale = static_entity->entity.scale;
     guScale(&static_entity->entity.scale_mtx, scale, scale, scale);
 
