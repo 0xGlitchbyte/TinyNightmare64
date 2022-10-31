@@ -107,7 +107,10 @@ LightData light_data = {
 AnimatedEntity nick = {
     entity: {
         pos: { 0, 0, 0},
-        type: NICK
+        type: NICK,
+        health: 100,
+        damage: 10,
+        ammo: 10
     }
 };
 
