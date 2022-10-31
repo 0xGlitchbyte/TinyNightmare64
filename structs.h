@@ -57,12 +57,14 @@ typedef enum {
 } entity_type;
 
 typedef struct {
+	Mtx	scale_mtx;
 	Mtx	pos_mtx;
 	Mtx	rot_mtx[3];
-	Mtx scale;
+	//Mtx scale;
 	float size[3];
 	float pos[3];
 	float dir[3];
+	float scale;
 	float pitch;
 	float yaw;
 	float speed;
