@@ -186,7 +186,7 @@ StaticEntity scenery[SCENERY_COUNT] = {
     {entity : {pos : {-450, 200, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
     {entity : {pos : {1500, 200, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
     {entity : {pos : {0, 200, 30}, scale : 2}, mesh : gfx_entrance},
-    {entity : {pos : {2000, 2000, 0}, scale : 3, yaw : 50}, mesh : gfx_shack},
+    {entity : {pos : {2000, 2000, 0}, scale: 1}, mesh : gfx_shack},
 };
 
 // USB
@@ -330,7 +330,7 @@ void move_animated_entity_one_frame(AnimatedEntity *animated_entity){
 
         if (entity->type == WILLY && entity->state == FALLBACK) {
             // TODO hacky standin "animation" for willy getting hit, jump up and fall back fast
-            entity->vertical_speed -= 1200;
+            //entity->vertical_speed -= 1200;
         } else {
             entity->vertical_speed -= GRAVITY;
         }
@@ -553,7 +553,7 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
         // TODO - handle states that willy can't be in somewhere
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
         //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
-        if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_idle);
+        if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_fall_ahead);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
     }
@@ -708,6 +708,9 @@ void willy_animcallback(u16 anim)
         case JUMP:
             set_entity_state(&willy, IDLE);
             break;
+        case FALLBACK:
+            set_entity_state(&willy, IDLE);
+            willy.entity.speed = 0;
         case ROLL:
             set_entity_state(&willy, IDLE);
             willy.entity.speed = 0;
@@ -996,7 +999,8 @@ void detect_collisions() {
     }
 
     if ( distance(candy.entity.pos, willy.entity.pos) < 150) {
-        willy.entity.vertical_speed = 4000;
+        //willy.entity.vertical_speed = 4000;
+        willy.entity.speed = 800;
         set_entity_state(&willy, FALLBACK);
     }
 }
