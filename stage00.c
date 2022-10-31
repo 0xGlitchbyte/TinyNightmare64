@@ -1035,12 +1035,13 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     //draw the entities
     set_pt(axis.entity.pos, willy.entity.pos);
-    draw_static_entity(&axis);
-    draw_static_entity(&candy);
+    //draw_static_entity(&axis);
 
     for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
         draw_static_entity(&ground_segments[i]);
     }
+
+    draw_static_entity(&candy);
 
     debug_entity_collision_rect(&scenery[SCENERY_COUNT - 1]);
 
@@ -1117,18 +1118,18 @@ void stage00_init(void){
 
 
     // the side length of one panel of ground
-    int ground_size = 800;
+    int ground_size = 5000;
     // these are declared about with the ground_segments array
     // it is the size of the grid of ground tiles we are creating
     // WIDTH_GROUND_SEGMENTS, HEIGHT_GROUND_SEGMENTS 
     // setup the ground
     for (int i = 0; i < WIDTH_GROUND_SEGMENTS; i++) {
         for (int j = 0; j < HEIGHT_GROUND_SEGMENTS; j++) {
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size;// - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size;// - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 0;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 800;
             ground_segments[i * WIDTH_GROUND_SEGMENTS + j].mesh = gfx_ground;
-            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.scale = 1;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.scale = 10;
         }
     }
 
