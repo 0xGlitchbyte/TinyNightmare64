@@ -553,7 +553,7 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
     } else if (animated_entity->entity.type == WILLY) {
         // TODO - handle states that willy can't be in somewhere
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
-        //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
+        if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_spinattack);
         if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_fall_ahead);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
@@ -1177,9 +1177,9 @@ void stage00_update(void){
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
-    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
+    else if (time_data.cur_frame % 1200 < 48) set_entity_state(&willy, ROLL);
 }
 
 
