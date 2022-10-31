@@ -57,6 +57,12 @@ typedef enum {
 } entity_type;
 
 typedef struct {
+	int health;
+	int damage;
+	int ammo;
+} BaseMechanics;
+
+typedef struct {
 	Mtx	scale_mtx;
 	Mtx	pos_mtx;
 	Mtx	rot_mtx[3];
@@ -72,9 +78,11 @@ typedef struct {
 	float forward_speed;
 	float side_speed;
 	entity_state state;
-	entity_type type;	
+	entity_type type;
+	BaseMechanics health;
+	BaseMechanics damage;
+	BaseMechanics ammo;	
 } Entity;
-
 
 typedef struct {
 	Entity entity;
