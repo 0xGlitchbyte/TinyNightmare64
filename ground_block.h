@@ -25,8 +25,8 @@ static Vtx vtx_ground[] = {
 
 static Gfx gfx_ground[] = {
     gsDPSetPrimColor(0, 0, 4, 75, 24, 255),
-    gsSPVertex(vtx_ground+0, 8, 0),
     gsDPPipeSync(),
+    gsSPVertex(vtx_ground+0, 8, 0),
     gsSP2Triangles(0, 1, 2, 0, 0, 2, 3, 0),
     gsSP2Triangles(4, 3, 2, 0, 4, 2, 5, 0),
     gsSP2Triangles(5, 2, 1, 0, 5, 1, 6, 0),

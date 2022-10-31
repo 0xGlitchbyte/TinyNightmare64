@@ -132,17 +132,15 @@ Mtx willyMtx[MESHCOUNT_willy];
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
+        scale: 1,
     },
     mesh: gfx_axis,
 };
 
-StaticEntity ground = {
-    entity: {
-        pos: { -500, 500, 16200},
-        scale: 200,
-    },
-    mesh: gfx_ground,
-};
+#define WIDTH_GROUND_SEGMENTS 5
+#define HEIGHT_GROUND_SEGMENTS 5
+#define GROUND_SEGMENTS_COUNT 25  // this should be the previous two multiplied together
+StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
 
 StaticEntity candy = {
     entity: {
@@ -1038,8 +1036,11 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     //draw the entities
     set_pt(axis.entity.pos, willy.entity.pos);
     draw_static_entity(&axis);
-    draw_static_entity(&ground);
     draw_static_entity(&candy);
+
+    for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
+        draw_static_entity(&ground_segments[i]);
+    }
 
     debug_entity_collision_rect(&scenery[SCENERY_COUNT - 1]);
 
@@ -1113,6 +1114,23 @@ void stage00_init(void){
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
+
+
+    // the side length of one panel of ground
+    int ground_size = 800;
+    // these are declared about with the ground_segments array
+    // it is the size of the grid of ground tiles we are creating
+    // WIDTH_GROUND_SEGMENTS, HEIGHT_GROUND_SEGMENTS 
+    // setup the ground
+    for (int i = 0; i < WIDTH_GROUND_SEGMENTS; i++) {
+        for (int j = 0; j < HEIGHT_GROUND_SEGMENTS; j++) {
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size;// - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size;// - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 0;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].mesh = gfx_ground;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.scale = 1;
+        }
+    }
 
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
