@@ -132,17 +132,15 @@ Mtx willyMtx[MESHCOUNT_willy];
 StaticEntity axis = {
     entity: {
         pos: { 0, 0, 0},
+        scale: 1,
     },
     mesh: gfx_axis,
 };
 
-StaticEntity ground = {
-    entity: {
-        pos: { -500, 500, 16200},
-        scale: 200,
-    },
-    mesh: gfx_ground,
-};
+#define WIDTH_GROUND_SEGMENTS 5
+#define HEIGHT_GROUND_SEGMENTS 5
+#define GROUND_SEGMENTS_COUNT 25  // this should be the previous two multiplied together
+StaticEntity ground_segments[GROUND_SEGMENTS_COUNT]= {};
 
 StaticEntity candy = {
     entity: {
@@ -555,7 +553,7 @@ void update_animation_based_on_state(AnimatedEntity * animated_entity) {
     } else if (animated_entity->entity.type == WILLY) {
         // TODO - handle states that willy can't be in somewhere
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
-        //if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_roll);
+        if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_spinattack);
         if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_fall_ahead);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
@@ -1037,8 +1035,12 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     //draw the entities
     set_pt(axis.entity.pos, willy.entity.pos);
-    draw_static_entity(&axis);
-    draw_static_entity(&ground);
+    //draw_static_entity(&axis);
+
+    for (int i = 0; i < GROUND_SEGMENTS_COUNT; i++) {
+        draw_static_entity(&ground_segments[i]);
+    }
+
     draw_static_entity(&candy);
 
     debug_entity_collision_rect(&scenery[SCENERY_COUNT - 1]);
@@ -1114,6 +1116,23 @@ void stage00_init(void){
     //sausage64_set_anim(&willy.helper, ANIMATION_willy_run); 
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
 
+
+    // the side length of one panel of ground
+    int ground_size = 5000;
+    // these are declared about with the ground_segments array
+    // it is the size of the grid of ground tiles we are creating
+    // WIDTH_GROUND_SEGMENTS, HEIGHT_GROUND_SEGMENTS 
+    // setup the ground
+    for (int i = 0; i < WIDTH_GROUND_SEGMENTS; i++) {
+        for (int j = 0; j < HEIGHT_GROUND_SEGMENTS; j++) {
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[0] =  i * ground_size - (WIDTH_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[1] =  j * ground_size - (HEIGHT_GROUND_SEGMENTS / 2) * ground_size;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.pos[2] = 800;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].mesh = gfx_ground;
+            ground_segments[i * WIDTH_GROUND_SEGMENTS + j].entity.scale = 10;
+        }
+    }
+
     // Set nick's animation speed based on region
     #if TV_TYPE == PAL    
         animspeed = 0.66;
@@ -1158,9 +1177,9 @@ void stage00_update(void){
     if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
-    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
+    else if (time_data.cur_frame % 1200 < 48) set_entity_state(&willy, ROLL);
 }
 
 
