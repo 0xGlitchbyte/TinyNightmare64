@@ -786,10 +786,10 @@ int pt_in_rect(float* pos1, Entity *entity, int width, int depth) {
     D[0] = entity->pos[0] + width / 2;
     D[1] = entity->pos[1] - depth / 2;
 
-    vector(&AB, &A, &B);
-    vector(&AM, &A, pos1);
-    vector(&BC, &B, C);
-    vector(&BM, &B, pos1);
+    vector(AB, A, B);
+    vector(AM, A, pos1);
+    vector(BC, B, C);
+    vector(BM, B, pos1);
 
     float dotABAM = dot(AB, AM);
     float dotABAB = dot(AB, AB);
@@ -865,9 +865,17 @@ float distance(float* pos1, float* pos2) {
 
 void detect_collisions() {
     StaticEntity *shack = &scenery[SCENERY_COUNT - 1];
-    if ( pt_in_rect(&nick.entity.pos, &scenery[SCENERY_COUNT - 1], get_static_entity_width(shack), get_static_entity_depth(shack))) {
-        nick.entity.speed = -800;
-        set_entity_state(&nick, FALLBACK);
+    if ( pt_in_rect(nick.entity.pos, &scenery[SCENERY_COUNT - 1].entity, get_static_entity_width(shack), get_static_entity_depth(shack))) {
+        // just do the oposite of what we did to move this frame to get out of the wall
+        Entity *entity = &nick.entity;
+        // calculate if the next frame will move us out of the box
+        float new_pos[3] = {};
+        float frame_distance = time_data.frame_duration * entity->speed;
+        new_pos[0] = entity->pos[0] + frame_distance * sin(rad(entity->yaw));
+        new_pos[1] = entity->pos[1] - frame_distance * cos(rad(entity->yaw));
+        if (pt_in_rect(new_pos, &scenery[SCENERY_COUNT - 1].entity, get_static_entity_width(shack), get_static_entity_depth(shack))) {
+            nick.entity.speed = 0;
+        }
     }
     if ( distance(nick.entity.pos, willy.entity.pos) < 150) {
         nick.entity.speed = -800;
@@ -1013,6 +1021,8 @@ void stage00_update(void){
     //Handle animation
     handle_controller_input(contdata, &nick);
 
+    detect_collisions();
+
     move_animated_entity_one_frame(&nick);
     move_animated_entity_one_frame(&willy);
     move_entity_one_frame(&candy.entity);
@@ -1022,7 +1032,6 @@ void stage00_update(void){
     
     sausage64_advance_anim(&nick.helper, animspeed);
 
-    detect_collisions();
 
     // make willy do different stuff    
 
