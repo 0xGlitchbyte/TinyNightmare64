@@ -149,30 +149,45 @@ StaticEntity candy = {
     mesh: gfx_candy,
 };
 
-#define SCENERY_COUNT 20
-StaticEntity scenery[SCENERY_COUNT]= {
-    {entity: { pos: { -300, 300, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -300, 350, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -240, 350, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -120, 250, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -300, 300, 30}, scale: 1 },mesh: gfx_pumpkin},
-    {entity: { pos: { -300, 350, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -240, 350, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { -120, 250, 30}, scale: 1},mesh: gfx_pumpkin},
-    {entity: { pos: { 300, 300, 30}, scale: 1},mesh: gfx_gravestone},
-    {entity: { pos: { 300, -300, 30}, scale: 1},mesh: gfx_gravestone_cross},
-    {entity: { pos: { 300, -600, 30}, scale: 1},mesh: gfx_gravestone_flat},
-    {entity: { pos: { 300, 500, 30}, scale: 1},mesh: gfx_gravestone_flat_2},
-    {entity: { pos: { 2000, 2000, 0}, scale: 3, yaw: 50 },mesh: gfx_shack},
-    {entity: { pos: { -200, 400, 30}, scale: 15 },mesh: gfx_tree1clear},
-    {entity: { pos: { -100, 800, 30}, scale: 15 },mesh: gfx_tree2clear},
-    {entity: { pos: { 0, -300, 30}, scale: 15 }, mesh: gfx_tree3},
-    {entity: { pos: { -600, 200, 30}, scale: 15 },mesh: gfx_tree4},
-    {entity: { pos: { -1500, 900, 30}, scale: 15 },mesh: gfx_tree5},
+#define SCENERY_COUNT 35
+StaticEntity scenery[SCENERY_COUNT] = {
+    {entity : {pos : {-300, 300, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-300, 350, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-240, 350, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-120, 250, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-300, 300, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-300, 350, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-240, 350, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {-120, 250, 30}, scale : 1}, mesh : gfx_pumpkin},
+    {entity : {pos : {300, 300, 30}, scale : 1}, mesh : gfx_gravestone},
+    {entity : {pos : {300, -300, 30}, scale : 1}, mesh : gfx_gravestone_cross},
+    {entity : {pos : {300, -600, 30}, scale : 1}, mesh : gfx_gravestone_flat},
+    {entity : {pos : {300, 500, 30}, scale : 1}, mesh : gfx_gravestone_flat_2},
+    {entity : {pos : {2000, 2000, 0}, scale : 3, yaw : 50}, mesh : gfx_shack},
+    {entity : {pos : {-200, 400, 30}, scale : 15}, mesh : gfx_tree1clear},
+    {entity : {pos : {-100, 800, 30}, scale : 15}, mesh : gfx_tree2clear},
+    {entity : {pos : {0, -300, 30}, scale : 15}, mesh : gfx_tree3},
+    {entity : {pos : {-600, 200, 30}, scale : 15}, mesh : gfx_tree4},
+    {entity : {pos : {-1500, 900, 30}, scale : 15}, mesh : gfx_tree5},
 
-    {entity: { pos: { 0, -1200, 30}, scale: 2, yaw: 180 },mesh: gfx_fence},
-    {entity: { pos: { -1500, -1200, 30}, scale: 2 },mesh: gfx_entrance}
-};
+    {entity : {pos : {600, -4325, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
+    {entity : {pos : {-350, -4325, 30}, scale : 2, yaw : 0}, mesh : gfx_fence},
+    {entity : {pos : {600, -3325, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {-350, -3325, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {1610, -3325, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
+    {entity : {pos : {-1350, -3325, 30}, scale : 2, yaw : 0}, mesh : gfx_fence},
+    {entity : {pos : {2200, -2500, 30}, scale : 2, yaw : 235}, mesh : gfx_fence},
+    {entity : {pos : {-2150, -2500, 30}, scale : 2, yaw : 315}, mesh : gfx_fence},
+    {entity : {pos : {2200, -1500, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {-2150, -1500, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {-2150, -500, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {2200, -500, 30}, scale : 2, yaw : 270}, mesh : gfx_fence},
+    {entity : {pos : {2200, -500, 30}, scale : 2, yaw : 135}, mesh : gfx_fence},
+    {entity : {pos : {-1450, 200, 30}, scale : 2, yaw : 225}, mesh : gfx_fence},
+    {entity : {pos : {-450, 200, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
+    {entity : {pos : {1500, 200, 30}, scale : 2, yaw : 180}, mesh : gfx_fence},
+
+    {entity : {pos : {0, 200, 30}, scale : 2}, mesh : gfx_entrance}};
 
 // USB
 static char uselight = TRUE;
