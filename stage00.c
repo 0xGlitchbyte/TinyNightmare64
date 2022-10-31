@@ -928,7 +928,7 @@ void stage00_update(void){
     // Poll for USB commands
     debug_pollcommands();  
 
-    //alculate fps
+    // Calculate fps
     time_management(&time_data);
 
     // Read the controller
@@ -941,7 +941,7 @@ void stage00_update(void){
     move_animated_entity_one_frame(&willy);
     move_entity_one_frame(&candy.entity);
    
-    // Advacnce animations
+    // Advance animations
     sausage64_advance_anim(&willy.helper, animspeed);
     
     sausage64_advance_anim(&nick.helper, animspeed);
