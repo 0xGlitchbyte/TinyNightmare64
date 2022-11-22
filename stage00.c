@@ -16,6 +16,7 @@
 #include "palette.h"
 #include "nick.h"
 #include "zombie.h"
+#include "mummy.h"
 #include "willy.h"
 #include "ground_block.h"
 #include "candy.h"
@@ -129,6 +130,16 @@ AnimatedEntity zombie = {
 };
 
 Mtx zombieMtx[MESHCOUNT_zombie];
+
+AnimatedEntity mummy = {
+    entity: {
+        pos: { 400, 400, 0},
+        yaw: 180,
+        type: NICK 
+    }
+};
+
+Mtx mummyMtx[MESHCOUNT_mummy];
 
 AnimatedEntity willy = {
     entity: {
@@ -714,6 +725,20 @@ void nick_animcallback(u16 anim){
     when_animation_completes(&nick);
 }
 
+void zombie_animcallback(u16 anim){
+    // yes this currently ignores the passed in animation, might not be bad to verify we are finishing
+    // the animation we are expecting, but this way the logic for where we go when transitioning out of
+    // a given state can be shared across different animated entities, that can do some subset, of move/roll/run/etc.
+    when_animation_completes(&zombie);
+}
+
+void mummy_animcallback(u16 anim){
+    // yes this currently ignores the passed in animation, might not be bad to verify we are finishing
+    // the animation we are expecting, but this way the logic for where we go when transitioning out of
+    // a given state can be shared across different animated entities, that can do some subset, of move/roll/run/etc.
+    when_animation_completes(&mummy);
+}
+
 void willy_animcallback(u16 anim)
 {
     // Go to idle animation when we finished attacking
@@ -1017,6 +1042,18 @@ void detect_collisions() {
         willy.entity.speed = 800;
         set_entity_state(&willy, FALLBACK);
     }
+
+    if ( distance(candy.entity.pos, zombie.entity.pos) < 100) {
+        //willy.entity.vertical_speed = 4000;
+        zombie.entity.speed = -300;
+        set_entity_state(&zombie, FALLBACK);
+    }
+
+    if ( distance(candy.entity.pos, mummy.entity.pos) < 100) {
+        //willy.entity.vertical_speed = 4000;
+        mummy.entity.speed = -300;
+        set_entity_state(&mummy, FALLBACK);
+    }
 }
 
 /*==============================
@@ -1069,6 +1106,8 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
 
     draw_animated_entity(&zombie);
 
+    draw_animated_entity(&mummy);
+
     // Syncronize the RCP and CPU and specify that our display list has ended
     gDPFullSync(glistp++);
     gSPEndDisplayList(glistp++);
@@ -1091,7 +1130,7 @@ void draw_debug_data(){
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "min old %d", (int) min_dist_to_wall_old * 100);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy yaw %d", (int) willy.entity.yaw);
     
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "min new %d", (int) min_dist_to_wall_new * 100);
@@ -1131,7 +1170,10 @@ void stage00_init(void){
     sausage64_set_animcallback(&willy.helper, willy_animcallback);
 
     sausage64_initmodel(&zombie.helper, MODEL_zombie, zombieMtx);
-    sausage64_set_animcallback(&zombie.helper, NULL);
+    sausage64_set_animcallback(&zombie.helper, zombie_animcallback);
+
+    sausage64_initmodel(&mummy.helper, MODEL_mummy, mummyMtx);
+    sausage64_set_animcallback(&mummy.helper, mummy_animcallback);
 
     // the side length of one panel of ground
     int ground_size = 5000;
@@ -1181,6 +1223,7 @@ void stage00_update(void){
     move_animated_entity_one_frame(&nick);
     move_animated_entity_one_frame(&willy);
     move_animated_entity_one_frame(&zombie);
+    move_animated_entity_one_frame(&mummy);
     move_entity_one_frame(&candy.entity);
    
     // Advacnce animations
@@ -1190,15 +1233,25 @@ void stage00_update(void){
 
     sausage64_advance_anim(&zombie.helper, animspeed);
 
+    sausage64_advance_anim(&mummy.helper, animspeed);
+
 
     // make willy do different stuff    
 
-    if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
+    if ( distance(nick.entity.pos, willy.entity.pos) < 3000) {
+        
+        int angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
+        willy.entity.yaw -= (willy.entity.yaw - angle_to_player) / 40;
+        //if (willy.entity.yaw > 180 && willy.entity.yaw < 360) willy.entity.yaw = -willy.entity.yaw;
+    }
+    //if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
+    /*
     else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
     else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
     else if (time_data.cur_frame % 1200 < 48) set_entity_state(&willy, ROLL);
+    */
 
     // make zombie do different stuff    
 
@@ -1208,6 +1261,15 @@ void stage00_update(void){
     //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
     else if (time_data.cur_frame % 1356 < 42) set_entity_state(&zombie, JUMP);
     else if (time_data.cur_frame % 1356 < 44) set_entity_state(&zombie, IDLE);
+
+    // make mummy do different stuff    
+
+    if (time_data.cur_frame % 9821 < 30) set_entity_state(&mummy, WALK);
+    else if (time_data.cur_frame % 9821 < 35) mummy.entity.yaw += 3 * (time_data.cur_frame % 10);
+    else if (time_data.cur_frame % 9821 < 40) mummy.entity.yaw -= 3 * (time_data.cur_frame % 10);
+    //if (time_data.cur_frame % 30 == 6) set_entity_state(&willy, ROLL);
+    else if (time_data.cur_frame % 9821 < 42) set_entity_state(&mummy, JUMP);
+    else if (time_data.cur_frame % 9821 < 44) set_entity_state(&mummy, IDLE);
 }
 
 
