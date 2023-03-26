@@ -98,7 +98,7 @@ float animspeed;
 // Camera
 Camera cam = {
     distance_from_entity: 700,
-    pitch: 30,
+    pitch: 20,
     angle_around_entity: 0,
 };
 
@@ -377,20 +377,20 @@ void handle_camera_c_buttons(Camera *camera, NUContData cont[1]){
 
     if (cont[0].trigger & U_CBUTTONS && camera->distance_from_entity == 2000){
         camera->distance_from_entity = 1200;
-        camera->pitch = 35;
+        camera->pitch = 20;
     } else
     if (cont[0].trigger & U_CBUTTONS && camera->distance_from_entity == 1200){
         camera->distance_from_entity = 700;
-        camera->pitch = 30;
+        camera->pitch = 20;
     }
 
     if (cont[0].trigger & D_CBUTTONS && camera->distance_from_entity == 700){
         camera->distance_from_entity = 1200;
-        camera->pitch = 35;
+        camera->pitch = 20;
     } else
     if (cont[0].trigger & D_CBUTTONS && camera->distance_from_entity == 1200){
         camera->distance_from_entity = 2000;
-        camera->pitch = 40;
+        camera->pitch = 20;
     }
 
     if (cont[0].trigger & L_CBUTTONS){
@@ -1249,7 +1249,7 @@ void stage00_update(void){
     // make willy do different stuff    
 
     // when close make him chase nick
-    if ( distance(nick.entity.pos, willy.entity.pos) < 2000
+    if ( distance(nick.entity.pos, willy.entity.pos) < 4000
             && willy.entity.state != FALLBACK) {
 
         set_entity_state(&willy, RUN);
