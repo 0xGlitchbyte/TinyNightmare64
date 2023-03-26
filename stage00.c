@@ -1248,57 +1248,29 @@ void stage00_update(void){
 
     // make willy do different stuff    
 
+    // when close make him chase nick
     if ( distance(nick.entity.pos, willy.entity.pos) < 3000) {
-        
-        /*
-        // simple buggy version that goes the wrong direction at the "zero point"
-        angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
-        willy.entity.yaw -= (willy.entity.yaw - angle_to_player) / 20;
-        */
-
         angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
         float angle_diff = willy.entity.yaw - angle_to_player;
         if (fabs(angle_diff) < 180) willy.entity.yaw -= angle_diff / 20;
         else {
-            willy.entity.yaw += angle_diff > 180 ? 5 : -5;
-            if (willy.entity.yaw > 270) willy.entity.yaw = -90 + (int) willy.entity.yaw % 270;
-            if (willy.entity.yaw < 90) willy.entity.yaw = 270 - (int) willy.entity.yaw % -90;
+            // something close to the max turning speed with the division by 20 of the angle difference above
+            willy.entity.yaw += angle_diff > 0 ? 1.5 : -1.5; 
+            if (willy.entity.yaw > 270) willy.entity.yaw = -90 + fmod(willy.entity.yaw, 270.0);
+            else if (willy.entity.yaw < -90) willy.entity.yaw = 270 + fmod(willy.entity.yaw, 90.0);
         }
-
-        /*
-        angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
-        float angle_diff = willy.entity.yaw - angle_to_player;
-        if (angle_diff > 180) {
-            angle_diff = - (int) angle_diff % 180;
-            willy.entity.yaw -= angle_diff / 20;
-        }
-        else if (angle_diff < -180) {
-            angle_diff = (int) angle_diff % 180;
-            willy.entity.yaw -= angle_diff / 20;
-        }
-        else {
-            willy.entity.yaw -= angle_diff / 20;
-        }
-        */
-        
-        /*
-        if (angle_to_player - willy.entity.yaw > 180) {
-            willy.entity.yaw += min(willy.entity.yaw - angle_to_player, 5);
-        } else {
-            willy.entity.yaw -= min(willy.entity.yaw - angle_to_player, 5);
-        }
-        */
     } else {
-        //if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
-        //else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
+        // make willy change direction randomly
+        if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
+        else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     }
 
-    if (time_data.cur_frame % 1200 < 30) ; //set_entity_state(&willy, RUN);
+    if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
     //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
     else if (time_data.cur_frame % 1200 < 31) set_entity_state(&willy, IDLE);
 
     if ( distance(nick.entity.pos, willy.entity.pos) < 500) {
-        //if (time_data.cur_frame % 1200 < 15) set_entity_state(&willy, ROLL);
+        if (time_data.cur_frame % 1200 < 15) set_entity_state(&willy, ROLL);
     }
 
     // make zombie do different stuff    
