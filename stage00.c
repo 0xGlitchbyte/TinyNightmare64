@@ -620,7 +620,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
         entity->state = new_state;
         update_animation_based_on_state(animated_entity);
         // TODO - just to make willy move, gets overriden by controller for user
-        animated_entity->entity.speed = 200;
+        animated_entity->entity.speed = 600;
     }
 
     if (new_state == IDLE
@@ -1124,17 +1124,26 @@ void draw_world(AnimatedEntity *highlighted, Camera *camera, LightData *light){
     Draws debug data
 ==============================*/
 
+
+int angle_to_player;
+
 void draw_debug_data(){
 
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 1);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "FPS %d", (int)time_data.FPS);
 
+    //int angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "angle to player %d", angle_to_player);
+
+    nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
+    nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy yaw %d", (int) (willy.entity.yaw));
+
+    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 2);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "willy yaw %d", (int) willy.entity.yaw);
     
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 3);
-    nuDebConPrintf(NU_DEB_CON_WINDOW0, "min new %d", (int) min_dist_to_wall_new * 100);
-    /*
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 4);
     nuDebConPrintf(NU_DEB_CON_WINDOW0, "cur_frame %llu", time_data.cur_frame);
     nuDebConTextPos(NU_DEB_CON_WINDOW0, 1, 5);
@@ -1204,6 +1213,7 @@ void stage00_init(void){
     Update stage variables every frame
 ==============================*/
 
+
 void stage00_update(void){
     
     // Poll for USB commands
@@ -1240,18 +1250,56 @@ void stage00_update(void){
 
     if ( distance(nick.entity.pos, willy.entity.pos) < 3000) {
         
-        int angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
-        willy.entity.yaw -= (willy.entity.yaw - angle_to_player) / 40;
-        //if (willy.entity.yaw > 180 && willy.entity.yaw < 360) willy.entity.yaw = -willy.entity.yaw;
+        /*
+        // simple buggy version that goes the wrong direction at the "zero point"
+        angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
+        willy.entity.yaw -= (willy.entity.yaw - angle_to_player) / 20;
+        */
+
+        angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
+        float angle_diff = willy.entity.yaw - angle_to_player;
+        if (fabs(angle_diff) < 180) willy.entity.yaw -= angle_diff / 20;
+        else {
+            willy.entity.yaw += angle_diff > 180 ? 5 : -5;
+            if (willy.entity.yaw > 270) willy.entity.yaw = -90 + (int) willy.entity.yaw % 270;
+            if (willy.entity.yaw < 90) willy.entity.yaw = 270 - (int) willy.entity.yaw % -90;
+        }
+
+        /*
+        angle_to_player = - deg(atan2(-(nick.entity.pos[1] - willy.entity.pos[1] ), (nick.entity.pos[0] - willy.entity.pos[0]))) + 90;
+        float angle_diff = willy.entity.yaw - angle_to_player;
+        if (angle_diff > 180) {
+            angle_diff = - (int) angle_diff % 180;
+            willy.entity.yaw -= angle_diff / 20;
+        }
+        else if (angle_diff < -180) {
+            angle_diff = (int) angle_diff % 180;
+            willy.entity.yaw -= angle_diff / 20;
+        }
+        else {
+            willy.entity.yaw -= angle_diff / 20;
+        }
+        */
+        
+        /*
+        if (angle_to_player - willy.entity.yaw > 180) {
+            willy.entity.yaw += min(willy.entity.yaw - angle_to_player, 5);
+        } else {
+            willy.entity.yaw -= min(willy.entity.yaw - angle_to_player, 5);
+        }
+        */
+    } else {
+        //if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
+        //else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
     }
-    //if (time_data.cur_frame % 1200 < 30) set_entity_state(&willy, RUN);
-    /*
-    else if (time_data.cur_frame % 1200 < 35) willy.entity.yaw += 3 * (time_data.cur_frame % 10);
-    else if (time_data.cur_frame % 1200 < 40) willy.entity.yaw -= 3 * (time_data.cur_frame % 10);
+
+    if (time_data.cur_frame % 1200 < 30) ; //set_entity_state(&willy, RUN);
     //else if (time_data.cur_frame % 1200 < 42) set_entity_state(&willy, JUMP);
-    else if (time_data.cur_frame % 1200 < 44) set_entity_state(&willy, IDLE);
-    else if (time_data.cur_frame % 1200 < 48) set_entity_state(&willy, ROLL);
-    */
+    else if (time_data.cur_frame % 1200 < 31) set_entity_state(&willy, IDLE);
+
+    if ( distance(nick.entity.pos, willy.entity.pos) < 500) {
+        //if (time_data.cur_frame % 1200 < 15) set_entity_state(&willy, ROLL);
+    }
 
     // make zombie do different stuff    
 
