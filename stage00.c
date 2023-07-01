@@ -115,6 +115,7 @@ AnimatedEntity nick = {
         type: NICK,
         health: 100,
         damage: 10,
+        scale: 3,
         ammo: 10
     }
 };
@@ -125,6 +126,7 @@ AnimatedEntity zombie = {
     entity: {
         pos: { 400, 400, 0},
         yaw: 180,
+        scale: 1,
         type: NICK 
     }
 };
@@ -135,6 +137,7 @@ AnimatedEntity mummy = {
     entity: {
         pos: { 400, 400, 0},
         yaw: 180,
+        scale: 1,
         type: NICK 
     }
 };
@@ -145,6 +148,7 @@ AnimatedEntity willy = {
     entity: {
         pos: { 400, 400, 0},
         yaw: 180,
+        scale: 1,
         type: WILLY
     }
 };
@@ -768,13 +772,17 @@ void draw_animated_entity(AnimatedEntity *animated_entity){
     guTranslate(&animated_entity->entity.pos_mtx, animated_entity->entity.pos[0], animated_entity->entity.pos[1], animated_entity->entity.pos[2]);
     guRotate(&animated_entity->entity.rot_mtx[0], animated_entity->entity.pitch, 1, 0, 0);
     guRotate(&animated_entity->entity.rot_mtx[1], animated_entity->entity.yaw, 0, 0, 1);
+    float scale = animated_entity->entity.scale;
+    guScale(&animated_entity->entity.scale_mtx, scale, scale, scale);
 
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.pos_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[0]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
     gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.rot_mtx[1]), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
+    gSPMatrix(glistp++, OS_K0_TO_PHYSICAL(&animated_entity->entity.scale_mtx), G_MTX_MODELVIEW | G_MTX_MUL | G_MTX_PUSH);
 
     sausage64_drawmodel(&glistp, &animated_entity->helper);
 
+    gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
     gSPPopMatrix(glistp++, G_MTX_MODELVIEW);
