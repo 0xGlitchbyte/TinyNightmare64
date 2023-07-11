@@ -39,16 +39,58 @@ typedef struct {
 	float roll;
 } Camera;
 
-typedef enum { 
-    IDLE, 
-    WALK, 
-   	RUN,
-	ROLL,
-   	JUMP,
-	FALL,
-	MIDAIR,
-	FALLBACK,	
-} entity_state;
+/*
+
+static s64Animation anims_nick[] = {
+    {"_0_t_pose", 1, anim_nick__0_t_pose_keyframes},
+    CROUCH_IDLE
+    CROUCH_TO_RUN
+    CROUCH_TO_STAND
+    FALL_IDLE
+    FALL_TO_STAND
+    JOG
+    JUMP
+    LOOK_AROUND
+    RUN_ARC
+    RUN
+    RUN_TO_ROLL
+    RUN_TO_STAND
+    SPRINT
+    STAND_IDLE
+    STAND_TO_CROUCH
+    STAND_TO_JUMP
+    STAND_TO_ROLL
+    STAND_TO_RUN
+    TAP_SHOE
+    WALK
+*/
+ typedef enum { 
+         
+    CROUCH,
+    //CROUCH_TO_RUN,
+    //CROUCH_TO_STAND,
+    FALL,
+    //FALL_TO_STAND,
+    JOG,
+    JUMP,
+    //LOOK_AROUND,
+    //RUN_ARC,
+    RUN,
+    //RUN_TO_ROLL,
+    ROLL,
+    //RUN_TO_STAND,
+    SPRINT,
+    //STAND_IDLE,
+    IDLE, // TODO - maybe rename to STAND
+    //STAND_TO_CROUCH,
+    //STAND_TO_JUMP,
+    //STAND_TO_ROLL,
+    //STAND_TO_RUN,
+    //TAP_SHOE,
+    WALK,
+		FALLBACK, // TODO - maybe delete
+		MIDAIR // TODO - maybe delete
+ } EntityState;
 
 typedef enum {
 	NICK,
@@ -76,7 +118,7 @@ typedef struct {
 	float vertical_speed;
 	float forward_speed;
 	float side_speed;
-	entity_state state;
+	EntityState state;
 	entity_type type;
 	BaseMechanics health;
 	BaseMechanics damage;

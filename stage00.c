@@ -74,7 +74,7 @@ void move_cam(Camera *camera, Entity* entity, NUContData cont[1]);
 void set_light(LightData *light);
 void set_cam(Camera *camera, Entity entity);
 
-void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state);
+void set_entity_state(AnimatedEntity * animated_entity, EntityState new_state);
 void animate_nick(NUContData cont[1]);
 void nick_animcallback(u16 anim);
 void willy_animcallback(u16 anim);
@@ -270,6 +270,11 @@ float deg(float rad){
 int lim(u32 input){
     if (input == 0) {return 0;}
     else {return 1;}
+}
+
+
+void set_anim(s64ModelHelper* mdl, u16 anim) {
+    sausage64_set_anim(mdl, anim);
 }
 
 
@@ -565,28 +570,45 @@ void set_cam(Camera *camera, Entity entity){
 }
 
 void update_animation_based_on_state(AnimatedEntity * animated_entity) {
-    entity_state new_state = animated_entity->entity.state;
+    EntityState new_state = animated_entity->entity.state;
+    Entity* entity = &animated_entity->entity;
     s64ModelHelper* helper = &animated_entity->helper;
     if (animated_entity->entity.type == NICK) {
-        if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_nick_jump);
-        if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_nick_roll);
-        if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_nick_fallback);
-        if (new_state == FALL) sausage64_set_anim(helper, ANIMATION_nick_fall);
-        if (new_state == MIDAIR) sausage64_set_anim(helper, ANIMATION_nick_midair);
-        if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_nick_idle);
-        if (new_state == WALK) sausage64_set_anim(helper, ANIMATION_nick_walk);
-        if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_nick_run);
+        /*
+        if (entity->state  == CROUCH_IDLE) set_anim(&animated_entity->helper, ANIMATION_nick_crouch_idle_left);
+        if (entity->state  == CROUCH_TO_RUN) set_anim(&animated_entity->helper, ANIMATION_nick_crouch_to_run_left);
+        if (entity->state  == CROUCH_TO_STAND) set_anim(&animated_entity->helper, ANIMATION_nick_crouch_to_stand_left);
+        if (entity->state  == FALL_IDLE) set_anim(&animated_entity->helper, ANIMATION_nick_fall_idle_left);
+        if (entity->state  == FALL_TO_STAND) set_anim(&animated_entity->helper, ANIMATION_nick_fall_to_stand_left);
+        if (entity->state  == JOG) set_anim(&animated_entity->helper, ANIMATION_nick_jog_left);
+        if (entity->state  == JUMP) set_anim(&animated_entity->helper, ANIMATION_nick_jump_left);
+        if (entity->state  == LOOK_AROUND) set_anim(&animated_entity->helper, ANIMATION_nick_look_around_left);
+        if (entity->state  == RUN_ARC) set_anim(&animated_entity->helper, ANIMATION_nick_run_arc_left);
+        if (entity->state  == RUN) set_anim(&animated_entity->helper, ANIMATION_nick_run_arc_left);
+        if (entity->state  == RUN_TO_ROLL) set_anim(&animated_entity->helper, ANIMATION_nick_run_to_roll_right);
+        if (entity->state  == RUN_TO_STAND) set_anim(&animated_entity->helper, ANIMATION_nick_run_to_stand_left);
+        if (entity->state  == SPRINT) set_anim(&animated_entity->helper, ANIMATION_nick_sprint_left);
+        if (entity->state  == STAND_IDLE) set_anim(&animated_entity->helper, ANIMATION_nick_stand_idle_left);
+        if (entity->state  == STAND_TO_CROUCH) set_anim(&animated_entity->helper, ANIMATION_nick_stand_to_crouch_left);
+        if (entity->state  == STAND_TO_JUMP) set_anim(&animated_entity->helper, ANIMATION_nick_stand_to_jump_left);
+        if (entity->state  == STAND_TO_ROLL) set_anim(&animated_entity->helper, ANIMATION_nick_stand_to_roll_left);
+        if (entity->state  == STAND_TO_RUN) set_anim(&animated_entity->helper, ANIMATION_nick_stand_to_run_left);
+        if (entity->state  == TAP_SHOE) set_anim(&animated_entity->helper, ANIMATION_nick_tap_shoe_left);
+        if (entity->state  == WALK) set_anim(&animated_entity->helper, ANIMATION_nick_walk_left);
+        */
     } else if (animated_entity->entity.type == WILLY) {
         // TODO - handle states that willy can't be in somewhere
+        /*
         if (new_state == JUMP) sausage64_set_anim(helper, ANIMATION_willy_jump);
         if (new_state == ROLL) sausage64_set_anim(helper, ANIMATION_willy_spinattack);
         if (new_state == FALLBACK) sausage64_set_anim(helper, ANIMATION_willy_fall_ahead);
         if (new_state == IDLE) sausage64_set_anim(helper, ANIMATION_willy_idle);
         if (new_state == RUN) sausage64_set_anim(helper, ANIMATION_willy_run);
+        */
     }
 }
 
-void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) {
+void set_entity_state(AnimatedEntity * animated_entity, EntityState new_state) {
 
     Entity * entity = &animated_entity->entity;
     int curr_state = entity->state;
@@ -600,7 +622,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == WALK 
               || curr_state == RUN)) {
         entity->state = new_state;
-        update_animation_based_on_state(animated_entity);
+        set_anim(&animated_entity->helper, ANIMATION_nick_jump_left);
         animated_entity->entity.vertical_speed = 600;
     }
 
@@ -609,7 +631,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
               || curr_state == WALK 
               || curr_state == RUN )) {
         entity->state = new_state;
-        update_animation_based_on_state(animated_entity);
+        set_anim(&animated_entity->helper, ANIMATION_nick_stand_to_roll_left);
         animated_entity->entity.speed = 800;
     }
 
@@ -617,12 +639,12 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
         entity->state = new_state;
         // TODO - just to make the zombie move, gets overriden by controller for user
         animated_entity->entity.speed = 400;
-        update_animation_based_on_state(animated_entity);
+        set_anim(&animated_entity->helper, ANIMATION_nick_walk_left);
     }
     if (new_state == RUN && 
             ( curr_state == IDLE || curr_state == WALK)) {
         entity->state = new_state;
-        update_animation_based_on_state(animated_entity);
+        set_anim(&animated_entity->helper, ANIMATION_nick_run_left);
         // TODO - just to make willy move, gets overriden by controller for user
         animated_entity->entity.speed = 600;
     }
@@ -637,7 +659,7 @@ void set_entity_state(AnimatedEntity * animated_entity, entity_state new_state) 
             )
             ) {
         entity->state = new_state;
-        update_animation_based_on_state(animated_entity);
+        set_anim(&animated_entity->helper, ANIMATION_nick_stand_idle_left);
         animated_entity->entity.speed = 0;
     }
 
@@ -1179,7 +1201,7 @@ void stage00_init(void){
 
     // Initialize entities
     sausage64_initmodel(&nick.helper, MODEL_nick, nickMtx);
-    sausage64_set_anim(&nick.helper, ANIMATION_nick_idle); 
+    sausage64_set_anim(&nick.helper, ANIMATION_nick_stand_idle_left); 
     sausage64_set_animcallback(&nick.helper, nick_animcallback);
 
     sausage64_initmodel(&willy.helper, MODEL_willy, willyMtx);
